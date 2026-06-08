@@ -1,1 +1,80 @@
+# ==============================
+# macOS
+# ==============================
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# ==============================
+# Node.js
+# ==============================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.yarn/cache
+.yarn/unplugged
+.pnp.*
+.next/
+.nuxt/
+.output/
+dist/
+out/
+
+# ==============================
+# 环境变量（重要！不能提交到 git）
+# ==============================
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# ==============================
+# 编辑器 / IDE
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================
+# 日志 & 临时文件
+# ==============================
+*.log
+logs/
+tmp/
+temp/
