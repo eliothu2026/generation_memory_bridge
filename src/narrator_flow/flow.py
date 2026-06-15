@@ -8,6 +8,7 @@
 - 流水线 C（叙事锚定物 + 图像提示词）：增量细化 + 详实度达标后触发全量重写与生图
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
@@ -56,9 +57,18 @@ class NarratorFlow(Flow[NarratorFlowState]):
     # ------------------------------------------------------------------
     def process_chunk(self, chunk: TranscriptChunk) -> None:
         self._ingest(chunk)
-        self._update_background(chunk)  # 流水线B：纯增量，每次都跑
-        self._update_logic(chunk)  # 流水线A：按节奏分发
-        self._update_anchor(chunk)  # 流水线C：增量 + 触发式全量
+        # 三条流水线互相无依赖，且各自只写 state 的不同切片
+        # （background / logic_outline / anchor），可安全并发。
+        # CrewAI kickoff 是同步的网络 IO 调用，用线程并发即可拿到真实加速。
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [
+                executor.submit(self._update_background, chunk),  # 流水线B：纯增量，每次都跑
+                executor.submit(self._update_logic, chunk),  # 流水线A：按节奏分发
+                executor.submit(self._update_anchor, chunk),  # 流水线C：增量 + 触发式全量
+            ]
+            # 逐个取回结果：任一流水线抛异常都会在此重新抛出，不会被静默吞掉
+            for future in futures:
+                future.result()
 
     def _ingest(self, chunk: TranscriptChunk) -> None:
         self.state.all_chunks.append(chunk)

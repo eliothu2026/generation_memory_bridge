@@ -109,10 +109,17 @@ src/narrator_flow/
 ├── streaming.py      # 模拟流式输入
 ├── tools/
 │   └── image_gen_tool.py   # 生图工具 stub（待接入真实模型）
-└── crews/
-    ├── timeline_crew/      # 流水线A：逻辑大纲
-    ├── background_crew/    # 流水线B：背景知识
-    └── anchor_crew/        # 流水线C：锚定物+提示词
+├── crews/
+│   ├── timeline_crew/      # 流水线A：逻辑大纲
+│   ├── background_crew/    # 流水线B：背景知识
+│   └── anchor_crew/        # 流水线C：锚定物+提示词
+└── streaming_app/          # 流式运行时骨架（async 事件循环 + 背压，不依赖 CrewAI Flow）
+    ├── coalescing_queue.py # 合并队列（背压核心）
+    ├── session_store.py    # 会话状态存储（内存占位）
+    ├── analyzer.py         # 单段分析：gather 并发三条流水线
+    ├── worker.py           # 单会话消费循环
+    ├── producer.py         # 模拟 ASR 流式输入
+    └── run_stream.py       # 流式骨架 CLI 入口
 ```
 
 ## 运行示例（18段示例文本，DeepSeek）
@@ -134,11 +141,64 @@ src/narrator_flow/
 > 注：`output/` 目录已加入 `.gitignore`，不会提交到仓库；运行一次 demo 后即可
 > 在本地查看 `output/*.json` 与 `output/generated_images/` 的完整内容。
 
+## 流式运行时骨架（streaming_app）
+
+> 上面的 `NarratorFlow`（CrewAI Flow）适合"对一批已录好的文本做一次性分析"，
+> 但要做成**真正能在流式场景里走的产品**，CrewAI Flow 的"一次 kickoff 跑完一张
+> DAG"模型并不合适：真实输入是无界的 ASR 流，且单段分析要 1-2 分钟，与亚秒级
+> 的上游存在 100 倍以上的吞吐错配。为此新增了 `src/narrator_flow/streaming_app/`，
+> 用一个 async 事件循环统一"输入 / 并发 / 服务"三个模型，**保留 CrewAI 的 Crew、
+> 去掉 Flow 这层编排壳**。
+
+主干数据流：
+
+```
+producer(模拟ASR) ──▶ CoalescingQueue ──▶ SessionWorker ──▶ SessionStore
+                       (合并/背压)            │
+                                        Analyzer.analyze
+                                        └─ asyncio.gather(背景, 逻辑, 锚点)
+```
+
+模块划分：
+
+| 文件 | 作用 |
+|---|---|
+| `coalescing_queue.py` | **背压核心**：有界队列，worker 忙时堆积的片段在下次取用时合并成一段，把"分析次数"与"上游速率"解耦 |
+| `session_store.py` | 会话状态存储（当前为内存占位，`load`/`save` 接口按可换 Redis/PG 设计） |
+| `analyzer.py` | 单段分析：`ingest` + `asyncio.gather` 并发三条流水线，每个 Crew 用 `asyncio.to_thread` 跑在线程里 |
+| `worker.py` | 单会话消费循环，单段失败不拖垮整个会话 |
+| `producer.py` | 模拟 ASR：读预录 transcript，按句末标点切成亚秒级片段推入队列 |
+| `run_stream.py` | CLI 入口，把以上接成一条主干 |
+
+运行：
+
+```bash
+source .venv/bin/activate
+python -m narrator_flow.streaming_app.run_stream                 # 真实 DeepSeek 流水线
+python -m narrator_flow.streaming_app.run_stream --segment-delay 0.02   # 调小间隔以加剧背压
+```
+
+背压效果（离线烟测，用桩流水线）：上游 40 个亚秒级片段，最终只触发 4 段分析
+（分别合并自 1/14/14/11 个片段）——上游再快，只是让单段合并得更长，而不会排起
+一条每个等 1-2 分钟的长队。
+
+> 注：原 `flow.py` 的 `process_chunk` 也已把三条流水线从串行改为并发
+> （`ThreadPoolExecutor`，三条流水线只写 state 的不同切片，无锁安全）。
+
 ## 待办
 
-- 接入真实生图模型（DALL-E / Stable Diffusion 等），替换 `image_gen_tool.py` 中的 stub
-- 真实音频流 / ASR 输入
-- FastAPI / WebSocket 服务化
+`streaming_app` 已经把"流式 + 背压 + 并发"的主干跑通，剩下几处仍是占位/凑合，
+按优先级：
+
+- **会话存储落地**：把 `InMemorySessionStore` 换成 Redis/Postgres（`load`=反序列化、
+  `save`=序列化），实现断点续接，避免进程崩溃丢状态（接口已留好，worker 不用改）
+- **修订/合并改后台任务**：把"每5段轻整理、每10段全量重跑"从 worker 主循环抽成
+  独立后台任务，并引入摘要/向量检索，避免 `full_transcript_text` 随对话无限变长
+- **多会话并发**：会话注册表管理多个 `SessionWorker` + 带限流的共享 LLM 客户端池
+- **FastAPI / WebSocket 服务化**：producer 换成 WS 收流、`on_update` 换成 WS 推回
+  （骨架已是 async 事件循环，可直接套上）
+- **真实音频流 / ASR 输入**：把 `producer.py` 的模拟 ASR 换成真实 ASR 引擎
+- **接入真实生图模型**（DALL-E / Stable Diffusion 等），替换 `image_gen_tool.py` 中的 stub
 
 ### 记忆/状态管理（当前为纯内存、单次会话）
 
