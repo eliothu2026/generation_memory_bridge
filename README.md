@@ -7,6 +7,9 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-prototype-orange)
 
+📄 **想了解产品思路**（用户、竞品、AI 风险、成功指标、关键决策）？
+见 **[产品简报 docs/product-brief.md](./docs/product-brief.md)**。
+
 ---
 
 ## 为什么做这个
