@@ -64,6 +64,32 @@ DEEPSEEK_API_KEY=sk-xxxxxxxx
 > 2. 把各 Crew 中 `llm=get_deepseek_llm()` 的入参去掉（使用 Agent 默认行为读取 yaml 的 llm 配置）
 > 3. `.env` 中设置 `OPENAI_API_KEY`
 
+## GUI 调试面板（Streamlit）
+
+为了方便自己测试，提供了一个 Streamlit 页面：
+
+```bash
+source .venv/bin/activate
+streamlit run src/narrator_flow/app.py
+```
+
+启动后浏览器打开 http://localhost:8501，左侧侧边栏可切换两种模式：
+
+- **预制 Demo 播放**：选择 `data/transcripts/` 下的某个示例文件，
+  点击「▶ 下一段」逐段播放，或勾选「自动连续播放剩余全部段落」一次性跑完；
+  右侧三栏实时展示流水线A（逻辑大纲）/ B（背景知识）/ C（锚点物件+生图提示词）的最新状态，
+  并可展开查看每个状态的原始 JSON。
+- **自由输入（实时模拟）**：在文本框中手动输入"主讲人刚说的一段话"，
+  点击「发送」后立即触发一次三条流水线的实时分析，可以逐句输入，
+  模拟真实边听边记的使用场景；"清空对话，重新开始"按钮可重置状态。
+
+两种模式分别使用独立的 `NarratorFlow` 实例和输出目录
+（`output_gui/demo/`、`output_gui/free/`，均已加入 `.gitignore`），
+互不影响，也不会覆盖 CLI demo 产生的 `output/`。
+
+> 注意：每处理一段都会触发3次 DeepSeek 调用（背景/逻辑/锚点），
+> 单段耗时通常在1-2分钟，期间页面会显示 spinner 提示。
+
 ## 输出
 
 控制台逐段打印三条流水线的进展，同时将最新状态写入：
