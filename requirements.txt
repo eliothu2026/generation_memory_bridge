@@ -1,3 +1,4 @@
 crewai[tools]>=0.80.0
 pydantic>=2.0
 python-dotenv>=1.0
+streamlit>=1.30

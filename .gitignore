@@ -88,3 +88,4 @@ temp/
 # narrator_flow 运行产物
 # ==============================
 output/
+output_gui/
