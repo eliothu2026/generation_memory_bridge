@@ -1,16 +1,22 @@
-"""CLI 入口：运行口述史实时分析 Agent demo。"""
+"""CLI 入口：运行口述史实时分析 Agent demo（逐段播放预录 transcript）。
+
+注：这是"交互式逐段分析"的简单入口，底层复用 streaming_app 的分析逻辑
+（NarratorSession）。要体验真正的"流式 + 背压"主干，见
+``python -m narrator_flow.streaming_app.run_stream``。
+"""
 
 import argparse
 
 from dotenv import load_dotenv
 
-from narrator_flow.flow import NarratorFlow
+from narrator_flow.streaming import stream_chunks
+from narrator_flow.streaming_app.session import NarratorSession
 
 
 def run() -> None:
     load_dotenv()
 
-    parser = argparse.ArgumentParser(description="口述史实时分析 Agent (CrewAI Flows demo)")
+    parser = argparse.ArgumentParser(description="口述史实时分析 Agent demo")
     parser.add_argument(
         "--transcript",
         default="data/transcripts/sample_story.json",
@@ -24,8 +30,11 @@ def run() -> None:
     )
     args = parser.parse_args()
 
-    flow = NarratorFlow(transcript_path=args.transcript, delay=args.delay)
-    flow.kickoff()
+    session = NarratorSession(output_dir="output")
+    for chunk in stream_chunks(args.transcript, args.delay):
+        session.process_chunk(chunk)
+        print(session.format_progress(chunk))
+        session.dump_outputs()
 
     print("\n=== 完成 ===")
     print("最终结果已写入 output/logic_outline.json, "

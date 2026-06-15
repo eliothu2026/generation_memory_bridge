@@ -83,7 +83,7 @@ streamlit run src/narrator_flow/app.py
   点击「发送」后立即触发一次三条流水线的实时分析，可以逐句输入，
   模拟真实边听边记的使用场景；"清空对话，重新开始"按钮可重置状态。
 
-两种模式分别使用独立的 `NarratorFlow` 实例和输出目录
+两种模式分别使用独立的 `NarratorSession` 实例和输出目录
 （`output_gui/demo/`、`output_gui/free/`，均已加入 `.gitignore`），
 互不影响，也不会覆盖 CLI demo 产生的 `output/`。
 
@@ -103,10 +103,10 @@ streamlit run src/narrator_flow/app.py
 
 ```
 src/narrator_flow/
-├── main.py          # CLI 入口
-├── flow.py          # NarratorFlow 主类（编排三条流水线）
+├── main.py          # CLI 入口（逐段播放 demo，底层用 NarratorSession）
+├── app.py           # Streamlit 调试界面（底层用 NarratorSession）
 ├── state.py         # Pydantic 状态模型
-├── streaming.py      # 模拟流式输入
+├── streaming.py      # 模拟流式输入（逐段读取 transcript）
 ├── tools/
 │   └── image_gen_tool.py   # 生图工具 stub（待接入真实模型）
 ├── crews/
@@ -114,13 +114,20 @@ src/narrator_flow/
 │   ├── background_crew/    # 流水线B：背景知识
 │   └── anchor_crew/        # 流水线C：锚定物+提示词
 └── streaming_app/          # 流式运行时骨架（async 事件循环 + 背压，不依赖 CrewAI Flow）
+    ├── analyzer.py         # 单段分析：gather 并发三条流水线（唯一一份流水线逻辑）
+    ├── session.py          # NarratorSession：同步逐段分析封装（GUI/CLI 用）
     ├── coalescing_queue.py # 合并队列（背压核心）
     ├── session_store.py    # 会话状态存储（内存占位）
-    ├── analyzer.py         # 单段分析：gather 并发三条流水线
     ├── worker.py           # 单会话消费循环
     ├── producer.py         # 模拟 ASR 流式输入
     └── run_stream.py       # 流式骨架 CLI 入口
 ```
+
+> 注：原先编排三条流水线的 `flow.py`（CrewAI `Flow` 子类）已移除。它的流水线逻辑
+> 与 `streaming_app/analyzer.py` 重复，且 `Flow` 的"一次 kickoff 跑完一张 DAG"模型
+> 不适合无界流式场景。现在 CLI、GUI、流式服务三个入口**共用同一份** `analyzer.py`
+> 的分析逻辑：交互式场景（CLI/GUI）经 `NarratorSession` 同步调用，真实流式经
+> `worker` + `coalescing_queue` 异步调用。
 
 ## 运行示例（18段示例文本，DeepSeek）
 
@@ -143,12 +150,12 @@ src/narrator_flow/
 
 ## 流式运行时骨架（streaming_app）
 
-> 上面的 `NarratorFlow`（CrewAI Flow）适合"对一批已录好的文本做一次性分析"，
-> 但要做成**真正能在流式场景里走的产品**，CrewAI Flow 的"一次 kickoff 跑完一张
+> 要做成**真正能在流式场景里走的产品**，CrewAI `Flow` 的"一次 kickoff 跑完一张
 > DAG"模型并不合适：真实输入是无界的 ASR 流，且单段分析要 1-2 分钟，与亚秒级
-> 的上游存在 100 倍以上的吞吐错配。为此新增了 `src/narrator_flow/streaming_app/`，
-> 用一个 async 事件循环统一"输入 / 并发 / 服务"三个模型，**保留 CrewAI 的 Crew、
-> 去掉 Flow 这层编排壳**。
+> 的上游存在 100 倍以上的吞吐错配。为此用 `src/narrator_flow/streaming_app/` 取代了
+> 原先基于 `Flow` 的编排，用一个 async 事件循环统一"输入 / 并发 / 服务"三个模型，
+> **保留 CrewAI 的 Crew、去掉 Flow 这层编排壳**。`analyzer.py` 是唯一一份流水线逻辑，
+> CLI / GUI 经 `NarratorSession` 同步复用，真实流式经 `worker` + 队列异步复用。
 
 主干数据流：
 
@@ -181,9 +188,6 @@ python -m narrator_flow.streaming_app.run_stream --segment-delay 0.02   # 调小
 背压效果（离线烟测，用桩流水线）：上游 40 个亚秒级片段，最终只触发 4 段分析
 （分别合并自 1/14/14/11 个片段）——上游再快，只是让单段合并得更长，而不会排起
 一条每个等 1-2 分钟的长队。
-
-> 注：原 `flow.py` 的 `process_chunk` 也已把三条流水线从串行改为并发
-> （`ThreadPoolExecutor`，三条流水线只写 state 的不同切片，无锁安全）。
 
 ## 待办
 
