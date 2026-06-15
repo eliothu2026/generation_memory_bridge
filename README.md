@@ -1,225 +1,230 @@
-# 口述史实时分析 Agent（CrewAI Flows Demo）
+# 代际记忆桥梁 · Generation Memory Bridge
 
-模拟"两人对话，一人主讲（叙事零散、缺乏逻辑/文化水平不高）、一人聆听"的场景。
-Agent 边"听"边持续完成三件事，并随对话推进不断完善输出：
+> 一个"边听边理解"的 AI：在长辈口述往事时，实时把零散、跳跃的讲述整理成
+> 时间线，补全时代背景，并把反复提及的"记忆锚点"还原成画面。
 
-1. **逻辑梳理**：把主讲人跳跃、混乱的口述整理成结构化的时间线/因果大纲
-2. **背景知识生成**：从口述细节推断时代/社会背景，持续生成、细化背景知识笔记
-3. **叙事锚定物 + 生图**：识别高频提及的标志性物件，持续完善其图像生成提示词，
-   待提示词足够详实后调用生图模型（接口已预留为 stub，实际模型待定）
+![Python](https://img.shields.io/badge/python-3.10+-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-prototype-orange)
 
-## 输入方式
+---
 
-当前为"模拟流式"：`data/transcripts/sample_story.json` 中预先准备好的中文口述
-文本，按段落顺序逐段送入，模拟实时听写过程。
+## 为什么做这个
 
-## 三条流水线的更新策略
+很多家庭里，长辈的人生记忆是最珍贵、也最容易永久流失的东西。但真实的口述往往：
 
-- **流水线 A（逻辑大纲）**：每段增量更新；每 5 段做一次轻量整理；每 10 段做一次
-  全量重跑（基于完整文本重建，纠正累积偏差）
-- **流水线 B（背景知识）**：纯增量，笔记只增不减
-- **流水线 C（锚定物 + 提示词）**：每段增量细化；当提示词详实度评分
-  `prompt_detail_score >= 0.8` 时触发一次全量重写并调用生图工具（stub）
+- **零散、跳跃**——想到哪说到哪，时间线是乱的；
+- **缺乏背景**——"那年生产队……"，可那是哪一年？什么社会环境？听的人未必懂；
+- **稍纵即逝**——讲过一次，细节就散落在几小时的录音里，没人会再去逐字回听。
+
+市面上的录音转写工具只解决了"**记录**"，没有解决"**理解**"。它给你一堆逐字稿，
+但不会替你把混乱的讲述**梳理成能读、能传、能看见**的记忆。
+
+**代际记忆桥梁**想填补的就是这一步：让 AI 像一个有耐心、懂历史、还会画画的
+倾听者，在长辈讲述的**同时**，一点点把记忆整理、还原出来。
+
+---
+
+## 它能做什么
+
+边听边并行完成三件事，并随讲述推进持续完善：
+
+| 能力 | 解决的问题 | 产出 |
+|---|---|---|
+| 🧩 **逻辑梳理** | 讲述跳来跳去、没有时间线 | 把零散口述重建成结构化的**时间线 / 因果大纲**，并标记"待澄清线索" |
+| 📚 **背景还原** | 细节背后的时代/社会语境缺失 | 从只言片语推断**年代与社会背景**，持续生成背景知识笔记（带置信度） |
+| 🖼️ **记忆可视化** | 珍贵的记忆只是文字，看不见 | 识别反复提及的**标志性物件**，逐步完善描述，最终生成一张图把它"画出来" |
+
+> 三件事是**同时进行**的——讲述者不必停顿，AI 在后台持续整理、修订、补全。
+
+---
+
+## 看一眼效果
+
+以一段"农村长辈回忆 1970–80 年代"的口述（18 段）为例，跑完后 AI 的产出：
+
+- **时间线**：整理出 15 个事件、8 条待澄清线索，覆盖知青下乡、记工分、包产到户、
+  购置拖拉机等多个时期，并在讲述中多次自我修订。
+- **背景还原**：年代估计收敛为"20 世纪 70 年代末至 80 年代末中国农村（家庭联产
+  承包责任制推行初期至中期）"，置信度 0.98，累积 8 条背景笔记。
+- **记忆锚点**：识别出讲述者反复提到的"**大槐树**"（提及 10 次），逐步攒出 14 条
+  视觉细节（树皮裂纹、树下石桌、喜鹊窝、四季变化……），细节足够后自动触发生图。
+
+<!-- 演示 GIF / 截图放这里（见「路线图」P1）。建议录一段 Streamlit 界面逐段播放
+     "大槐树"故事、右侧三栏实时填充的过程，约 20–30 秒。 -->
+> 📺 **演示动图待补**：推荐录制 Streamlit 调试界面逐段播放、三栏实时更新的过程
+> （见下方「在线调试界面」）。这是本项目最直观的展示，也是路线图里的下一步。
+
+---
 
 ## 快速开始
 
+环境要求：Python ≥ 3.10（`crewai` 不支持 3.9，建议用 pyenv 安装 3.10.x）。
+
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # 并填入 DEEPSEEK_API_KEY
-python -m narrator_flow.main
-# 或带延迟模拟实时效果：
-python -m narrator_flow.main --delay 1.0
+pip install -e .                 # 以可编辑模式安装（把 src 加入路径）
+cp .env.example .env             # 然后在 .env 中填入 DEEPSEEK_API_KEY
+
+python -m narrator_flow.main             # 逐段播放示例口述并实时分析
+python -m narrator_flow.main --delay 1.0 # 加延迟，更接近真实听写节奏
 ```
 
-需要先将 `src` 加入 `PYTHONPATH`（或以可编辑模式安装）：
+体验真正的"流式 + 背压"运行时（默认 SQLite 持久化，可断点续接）：
 
 ```bash
-pip install -e .
+python -m narrator_flow.streaming_app.run_stream
 ```
 
-环境要求：Python >= 3.10（建议用 pyenv 安装 3.10.x），因为 crewai 不支持 3.9。
+---
 
-## LLM 配置（当前使用 DeepSeek）
+## 在线调试界面（Streamlit）
 
-三个 Crew 的 `agents.yaml` 中均配置为 `llm: deepseek/deepseek-chat`，运行前
-需在 `.env` 中设置：
-
-```
-DEEPSEEK_API_KEY=sk-xxxxxxxx
-```
-
-> **关于 `src/narrator_flow/llm_compat.py`**：DeepSeek 的 OpenAI 兼容接口
-> 不支持 OpenAI 专属的结构化输出方式
-> `client.beta.chat.completions.parse(response_format=<PydanticModel>)`
-> （会报错 `This response_format type is unavailable now`）。
-> 因此项目里自定义了 `DeepSeekCompatibleLLM`（继承自
-> `crewai.llms.providers.openai_compatible.completion.OpenAICompatibleCompletion`），
-> 在存在 `output_pydantic`/`output_json` 时改用普通的
-> `chat.completions.create(response_format={"type": "json_object"})`，
-> 再手动用 Pydantic 模型解析返回的 JSON 文本。各 Crew 的 `@agent` 方法通过
-> `llm=get_deepseek_llm()` 使用这个自定义 LLM。
->
-> 若想切回 OpenAI（gpt-4o-mini 等原生支持 `beta.parse` 的模型），可以：
-> 1. 把各 `agents.yaml` 的 `llm` 改回 `gpt-4o-mini`
-> 2. 把各 Crew 中 `llm=get_deepseek_llm()` 的入参去掉（使用 Agent 默认行为读取 yaml 的 llm 配置）
-> 3. `.env` 中设置 `OPENAI_API_KEY`
-
-## GUI 调试面板（Streamlit）
-
-为了方便自己测试，提供了一个 Streamlit 页面：
+最直观的体验方式——一个能实时看到三件事如何被填充的网页：
 
 ```bash
-source .venv/bin/activate
-streamlit run src/narrator_flow/app.py
+streamlit run src/narrator_flow/app.py   # 浏览器打开 http://localhost:8501
 ```
 
-启动后浏览器打开 http://localhost:8501，左侧侧边栏可切换两种模式：
+两种模式：
 
-- **预制 Demo 播放**：选择 `data/transcripts/` 下的某个示例文件，
-  点击「▶ 下一段」逐段播放，或勾选「自动连续播放剩余全部段落」一次性跑完；
-  右侧三栏实时展示流水线A（逻辑大纲）/ B（背景知识）/ C（锚点物件+生图提示词）的最新状态，
-  并可展开查看每个状态的原始 JSON。
-- **自由输入（实时模拟）**：在文本框中手动输入"主讲人刚说的一段话"，
-  点击「发送」后立即触发一次三条流水线的实时分析，可以逐句输入，
-  模拟真实边听边记的使用场景；"清空对话，重新开始"按钮可重置状态。
+- **预制 Demo 播放**：选一个示例口述，点「▶ 下一段」逐段播放（或自动连播），
+  右侧三栏实时展示时间线 / 背景 / 记忆锚点的最新状态，可展开看原始 JSON。
+- **自由输入**：在文本框里逐句输入"长辈刚说的一段话"，点「发送」立即触发分析，
+  模拟真实的边听边记场景。
 
-两种模式分别使用独立的 `NarratorSession` 实例和输出目录
-（`output_gui/demo/`、`output_gui/free/`，均已加入 `.gitignore`），
-互不影响，也不会覆盖 CLI demo 产生的 `output/`。
+> ⏱️ 注意：每处理一段会触发 3 次 LLM 调用，单段通常需 1–2 分钟（页面有进度提示）。
 
-> 注意：每处理一段都会触发3次 DeepSeek 调用（背景/逻辑/锚点），
-> 单段耗时通常在1-2分钟，期间页面会显示 spinner 提示。
+---
 
-## 输出
+## 设计 & 架构
 
-控制台逐段打印三条流水线的进展，同时将最新状态写入：
+这个项目最初是 CrewAI Flows 的练习，但在朝"真正能用的流式产品"演进时，做了几个
+关键的产品/工程取舍——它们也是理解这套代码的主线：
 
-- `output/logic_outline.json` — 逻辑/时间线大纲
-- `output/background_knowledge.json` — 背景知识笔记
-- `output/anchor_object.json` — 锚定物 + 图像提示词状态
-- `output/generated_images/<物件名>.txt` — 生图结果（当前为 stub 占位文件）
+**1. 三条流水线，三种更新节奏。** 不是每件事都用同样的频率重算：
 
-## 项目结构
+- 逻辑大纲：每段增量更新；每 5 段轻量整理；每 10 段基于全文全量重跑（纠正累积偏差）
+- 背景知识：纯增量，笔记只增不减
+- 记忆锚点：每段细化提示词；详实度达标后触发一次全量重写并生图
+
+**2. 从"一次性分析"转向"流式运行时"。** 真实场景是无界的语音输入，而单段分析要
+1–2 分钟，与亚秒级的上游存在 **100 倍以上的吞吐错配**。为此引入了一个核心机制——
+**合并队列（背压）**：上游说得再快，也只是让待分析的文本"合并得更长"，而不会排起
+一条每段都要等 1–2 分钟的长队。
+
+> 实测：上游 40 个亚秒级片段，经合并最终只触发 4 段分析（分别合并自 1/14/14/11 段）。
+
+**3. 砍掉用不上的抽象。** 流式场景下，CrewAI 的 `Flow`（一次 kickoff 跑完一张
+有向图）反而别扭——既背了它的概念成本，又用不上它的编排能力。于是**保留擅长干活的
+`Crew`、去掉 `Flow` 这层壳**，用一个 async 事件循环统一"输入 / 并发 / 服务"。
+
+**4. 状态可持久化、可续接。** 会话状态序列化到本地 SQLite，进程崩溃/重启后用同一个
+会话 ID 即可从中断处继续。接口按"可换 Redis/Postgres"设计，为未来多机扩展留好了缝。
+
+```
+producer(模拟ASR) ──▶ 合并队列(背压) ──▶ 单会话 worker ──▶ 会话存储(SQLite)
+                                              │
+                                       并发跑三条流水线
+                                  └─ asyncio.gather(逻辑, 背景, 锚点)
+```
+
+---
+
+## 路线图
+
+原型已经把"流式 + 背压 + 并发 + 断点续接"的主干跑通。接下来按"开源易用 +
+作品展示"的目标推进：
+
+- **📺 录制演示动图**：Streamlit 界面逐段播放、三栏实时填充（最直观的展示）
+- **🆓 免 key 试用模式**：用预录结果回放，让人不配 API key、不花钱就能跑通看效果
+- **🧠 防止上下文膨胀**：把"周期性全量重跑/摘要合并"抽成后台任务，并引入摘要/向量
+  检索，避免讲述越长、prompt 越大、越慢越贵
+- **🎙️ 接入真实 ASR**：把模拟流式输入换成真实语音识别
+- **🎨 接入真实生图模型**（DALL·E / Stable Diffusion 等），替换当前的 stub
+- **🌐 服务化**：FastAPI + WebSocket，让长辈能从手机/网页远程连入（async 骨架已就绪）
+
+---
+
+## 技术细节
+
+<details>
+<summary><b>项目结构</b></summary>
 
 ```
 src/narrator_flow/
 ├── main.py          # CLI 入口（逐段播放 demo，底层用 NarratorSession）
 ├── app.py           # Streamlit 调试界面（底层用 NarratorSession）
 ├── state.py         # Pydantic 状态模型
-├── streaming.py      # 模拟流式输入（逐段读取 transcript）
+├── streaming.py     # 模拟流式输入（逐段读取 transcript）
 ├── tools/
 │   └── image_gen_tool.py   # 生图工具 stub（待接入真实模型）
 ├── crews/
-│   ├── timeline_crew/      # 流水线A：逻辑大纲
-│   ├── background_crew/    # 流水线B：背景知识
-│   └── anchor_crew/        # 流水线C：锚定物+提示词
-└── streaming_app/          # 流式运行时骨架（async 事件循环 + 背压，不依赖 CrewAI Flow）
+│   ├── timeline_crew/      # 逻辑大纲
+│   ├── background_crew/    # 背景知识
+│   └── anchor_crew/        # 记忆锚点 + 提示词
+└── streaming_app/          # 流式运行时（async 事件循环 + 背压，不依赖 CrewAI Flow）
     ├── analyzer.py         # 单段分析：gather 并发三条流水线（唯一一份流水线逻辑）
-    ├── session.py          # NarratorSession：同步逐段分析封装（GUI/CLI 用）
+    ├── session.py          # NarratorSession：同步逐段分析封装（CLI/GUI 用）
     ├── coalescing_queue.py # 合并队列（背压核心）
-    ├── session_store.py    # 会话状态存储（内存占位）
+    ├── session_store.py    # 会话存储：内存 / SQLite（可断点续接）
     ├── worker.py           # 单会话消费循环
     ├── producer.py         # 模拟 ASR 流式输入
-    └── run_stream.py       # 流式骨架 CLI 入口
+    └── run_stream.py       # 流式运行时 CLI 入口
 ```
 
-> 注：原先编排三条流水线的 `flow.py`（CrewAI `Flow` 子类）已移除。它的流水线逻辑
-> 与 `streaming_app/analyzer.py` 重复，且 `Flow` 的"一次 kickoff 跑完一张 DAG"模型
-> 不适合无界流式场景。现在 CLI、GUI、流式服务三个入口**共用同一份** `analyzer.py`
-> 的分析逻辑：交互式场景（CLI/GUI）经 `NarratorSession` 同步调用，真实流式经
-> `worker` + `coalescing_queue` 异步调用。
+CLI、GUI、流式服务三个入口**共用同一份** `analyzer.py` 的分析逻辑：交互式场景
+（CLI/GUI）经 `NarratorSession` 同步调用，真实流式经 `worker` + 合并队列异步调用。
+</details>
 
-## 运行示例（18段示例文本，DeepSeek）
+<details>
+<summary><b>LLM 配置（DeepSeek / OpenAI 兼容）</b></summary>
 
-跑完 `data/transcripts/sample_story.json` 的全部18段后，三条流水线的最终结果示例：
+三个 Crew 默认使用 `deepseek/deepseek-chat`，运行前在 `.env` 设置
+`DEEPSEEK_API_KEY=sk-xxxx`。
 
-- **流水线A（逻辑大纲）**：整理出 15 个时间线事件，8 条待澄清线索
-  （`open_threads`），覆盖知青下乡、包产到户、拖拉机购置等多个时期，
-  并按"每5段轻量整理、每10段全量重跑"的节奏多次更新。
-- **流水线B（背景知识）**：年代估计收敛为
-  "20世纪70年代末至80年代末中国农村（家庭联产承包责任制推行初期至中期）"，
-  置信度 0.98，累积 8 条背景笔记（拖拉机、记工分、知青下乡、粮票、人民公社、
-  辘轳水井、包产到户、农机情感价值），笔记数量随对话单调递增、从不删减。
-- **流水线C（锚定物 + 生图）**："大槐树"被提及 10 次，描述属性累积到 14 条
-  （树皮裂纹、石桌、喜鹊窝、四季变化等），`prompt_detail_score` 达到 0.9
-  （>= 0.8 阈值），触发全量提示词重写并调用 stub 生图工具，生成
-  `output/generated_images/大槐树.txt`。
+`src/narrator_flow/llm_compat.py` 解决了一个兼容性问题：DeepSeek 的 OpenAI 兼容接口
+不支持 OpenAI 专属的结构化输出 `client.beta.chat.completions.parse(...)`（会报
+`This response_format type is unavailable now`）。因此自定义了 `DeepSeekCompatibleLLM`，
+在需要结构化输出时改用普通的 `chat.completions.create(response_format={"type":
+"json_object"})`，再用 Pydantic 手动解析。
 
-> 注：`output/` 目录已加入 `.gitignore`，不会提交到仓库；运行一次 demo 后即可
-> 在本地查看 `output/*.json` 与 `output/generated_images/` 的完整内容。
+切回 OpenAI（如 `gpt-4o-mini`）：把各 `agents.yaml` 的 `llm` 改回 `gpt-4o-mini`，
+去掉各 Crew 中 `llm=get_deepseek_llm()` 入参，并在 `.env` 设置 `OPENAI_API_KEY`。
+</details>
 
-## 流式运行时骨架（streaming_app）
+<details>
+<summary><b>流式运行时与背压</b></summary>
 
-> 要做成**真正能在流式场景里走的产品**，CrewAI `Flow` 的"一次 kickoff 跑完一张
-> DAG"模型并不合适：真实输入是无界的 ASR 流，且单段分析要 1-2 分钟，与亚秒级
-> 的上游存在 100 倍以上的吞吐错配。为此用 `src/narrator_flow/streaming_app/` 取代了
-> 原先基于 `Flow` 的编排，用一个 async 事件循环统一"输入 / 并发 / 服务"三个模型，
-> **保留 CrewAI 的 Crew、去掉 Flow 这层编排壳**。`analyzer.py` 是唯一一份流水线逻辑，
-> CLI / GUI 经 `NarratorSession` 同步复用，真实流式经 `worker` + 队列异步复用。
+- **合并队列** `coalescing_queue.py`：有界队列，worker 忙时堆积的片段在下次取用时
+  合并成一段，把"分析次数"与"上游速率"解耦——这是应对吞吐错配的核心。
+- **会话存储** `session_store.py`：`SqliteSessionStore`（默认）每段处理后落盘，崩溃/
+  重启后用同一 `--session-id` 续接；`InMemorySessionStore` 退出即丢。
+- **并发**：`analyzer.py` 用 `asyncio.gather` 同时跑三条流水线，每个 Crew 调用经
+  `asyncio.to_thread` 跑在线程里（网络 IO 释放 GIL，获得真实并发）。
 
-主干数据流：
-
-```
-producer(模拟ASR) ──▶ CoalescingQueue ──▶ SessionWorker ──▶ SessionStore
-                       (合并/背压)            │
-                                        Analyzer.analyze
-                                        └─ asyncio.gather(背景, 逻辑, 锚点)
-```
-
-模块划分：
-
-| 文件 | 作用 |
-|---|---|
-| `coalescing_queue.py` | **背压核心**：有界队列，worker 忙时堆积的片段在下次取用时合并成一段，把"分析次数"与"上游速率"解耦 |
-| `session_store.py` | 会话状态存储，`load`/`save` 接口可换后端：`InMemorySessionStore`（退出即丢）/ `SqliteSessionStore`（落盘、可断点续接，默认） |
-| `analyzer.py` | 单段分析：`ingest` + `asyncio.gather` 并发三条流水线，每个 Crew 用 `asyncio.to_thread` 跑在线程里 |
-| `session.py` | `NarratorSession`：同步逐段分析封装（CLI/GUI 用，复用同一份 analyzer） |
-| `worker.py` | 单会话消费循环，单段失败不拖垮整个会话 |
-| `producer.py` | 模拟 ASR：读预录 transcript，按句末标点切成亚秒级片段推入队列 |
-| `run_stream.py` | CLI 入口，把以上接成一条主干 |
-
-运行：
+运行参数：
 
 ```bash
-source .venv/bin/activate
-python -m narrator_flow.streaming_app.run_stream                 # 默认 SQLite 持久化，可断点续接
-python -m narrator_flow.streaming_app.run_stream --segment-delay 0.02   # 调小间隔以加剧背压
-python -m narrator_flow.streaming_app.run_stream --store memory  # 不落盘（退出即丢）
+python -m narrator_flow.streaming_app.run_stream                # 默认 SQLite，可续接
+python -m narrator_flow.streaming_app.run_stream --segment-delay 0.02  # 加剧背压
+python -m narrator_flow.streaming_app.run_stream --store memory # 不落盘
 ```
+</details>
 
-**背压效果**（离线烟测，用桩流水线）：上游 40 个亚秒级片段，最终只触发 4 段分析
-（分别合并自 1/14/14/11 个片段）——上游再快，只是让单段合并得更长，而不会排起
-一条每个等 1-2 分钟的长队。
+<details>
+<summary><b>输出文件</b></summary>
 
-**断点续接**：默认用 `SqliteSessionStore` 把每段处理后的 state 落盘到
-`output_stream/sessions.db`。进程崩溃/重启后，用同一个 `--session-id` 再跑，会从
-磁盘读回上次的 state、从中断处继续（`current_chunk_index` 接着递增）；不同
-`--session-id` 之间互相隔离。
+控制台逐段打印进展，同时将最新状态写入（`output*/` 均已加入 `.gitignore`）：
 
-## 待办
+- `logic_outline.json` — 时间线大纲
+- `background_knowledge.json` — 背景知识笔记
+- `anchor_object.json` — 记忆锚点 + 图像提示词状态
+- `generated_images/<物件名>.txt` — 生图结果（当前为 stub 占位）
+</details>
 
-`streaming_app` 已经把"流式 + 背压 + 并发 + 断点续接"的主干跑通，剩下几处仍是
-占位/凑合，按优先级：
+---
 
-- ✅ **会话存储落地**（已完成）：`SqliteSessionStore` 把 state 序列化到本地 SQLite，
-  支持进程崩溃/重启后断点续接。后续上多机时可按同样的 `load`/`save` 接口换成
-  Redis/Postgres，worker 不用改。
-- **修订/合并改后台任务**：把"每5段轻整理、每10段全量重跑"从 worker 主循环抽成
-  独立后台任务，并引入摘要/向量检索，避免 `full_transcript_text` 随对话无限变长
-- **多会话并发**：会话注册表管理多个 `SessionWorker` + 带限流的共享 LLM 客户端池
-- **FastAPI / WebSocket 服务化**：producer 换成 WS 收流、`on_update` 换成 WS 推回
-  （骨架已是 async 事件循环，可直接套上）
-- **真实音频流 / ASR 输入**：把 `producer.py` 的模拟 ASR 换成真实 ASR 引擎
-- **接入真实生图模型**（DALL-E / Stable Diffusion 等），替换 `image_gen_tool.py` 中的 stub
+## License
 
-### 记忆/状态管理（当前为纯内存、单次会话）
-
-当前 `NarratorFlowState` 只存在于内存中的单个 flow 实例里，重启进程/刷新
-Streamlit 页面即丢失；`output/`、`output_gui/` 下的 JSON 只是运行结束后的
-快照，不会被重新加载续接。后续可以考虑：
-
-- 把 `NarratorFlowState` 定期序列化到磁盘/数据库，支持"加载已有state继续对话"
-- 给 `background.notes`、`logic_outline.events` 加摘要/合并机制，避免随对话
-  增长导致 prompt 无限变长
-- 用向量库存储历史细节，按需检索相关片段，而不是每次把全量状态/全文塞进 prompt
-- 支持多用户/多会话并发（当前为单实例单状态）
+[MIT](./LICENSE) © 2026 eliothu2026
