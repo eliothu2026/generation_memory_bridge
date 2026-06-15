@@ -139,3 +139,15 @@ src/narrator_flow/
 - 接入真实生图模型（DALL-E / Stable Diffusion 等），替换 `image_gen_tool.py` 中的 stub
 - 真实音频流 / ASR 输入
 - FastAPI / WebSocket 服务化
+
+### 记忆/状态管理（当前为纯内存、单次会话）
+
+当前 `NarratorFlowState` 只存在于内存中的单个 flow 实例里，重启进程/刷新
+Streamlit 页面即丢失；`output/`、`output_gui/` 下的 JSON 只是运行结束后的
+快照，不会被重新加载续接。后续可以考虑：
+
+- 把 `NarratorFlowState` 定期序列化到磁盘/数据库，支持"加载已有state继续对话"
+- 给 `background.notes`、`logic_outline.events` 加摘要/合并机制，避免随对话
+  增长导致 prompt 无限变长
+- 用向量库存储历史细节，按需检索相关片段，而不是每次把全量状态/全文塞进 prompt
+- 支持多用户/多会话并发（当前为单实例单状态）
