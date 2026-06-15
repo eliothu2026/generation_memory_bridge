@@ -171,8 +171,9 @@ producer(模拟ASR) ──▶ CoalescingQueue ──▶ SessionWorker ──▶ 
 | 文件 | 作用 |
 |---|---|
 | `coalescing_queue.py` | **背压核心**：有界队列，worker 忙时堆积的片段在下次取用时合并成一段，把"分析次数"与"上游速率"解耦 |
-| `session_store.py` | 会话状态存储（当前为内存占位，`load`/`save` 接口按可换 Redis/PG 设计） |
+| `session_store.py` | 会话状态存储，`load`/`save` 接口可换后端：`InMemorySessionStore`（退出即丢）/ `SqliteSessionStore`（落盘、可断点续接，默认） |
 | `analyzer.py` | 单段分析：`ingest` + `asyncio.gather` 并发三条流水线，每个 Crew 用 `asyncio.to_thread` 跑在线程里 |
+| `session.py` | `NarratorSession`：同步逐段分析封装（CLI/GUI 用，复用同一份 analyzer） |
 | `worker.py` | 单会话消费循环，单段失败不拖垮整个会话 |
 | `producer.py` | 模拟 ASR：读预录 transcript，按句末标点切成亚秒级片段推入队列 |
 | `run_stream.py` | CLI 入口，把以上接成一条主干 |
@@ -181,21 +182,28 @@ producer(模拟ASR) ──▶ CoalescingQueue ──▶ SessionWorker ──▶ 
 
 ```bash
 source .venv/bin/activate
-python -m narrator_flow.streaming_app.run_stream                 # 真实 DeepSeek 流水线
+python -m narrator_flow.streaming_app.run_stream                 # 默认 SQLite 持久化，可断点续接
 python -m narrator_flow.streaming_app.run_stream --segment-delay 0.02   # 调小间隔以加剧背压
+python -m narrator_flow.streaming_app.run_stream --store memory  # 不落盘（退出即丢）
 ```
 
-背压效果（离线烟测，用桩流水线）：上游 40 个亚秒级片段，最终只触发 4 段分析
+**背压效果**（离线烟测，用桩流水线）：上游 40 个亚秒级片段，最终只触发 4 段分析
 （分别合并自 1/14/14/11 个片段）——上游再快，只是让单段合并得更长，而不会排起
 一条每个等 1-2 分钟的长队。
 
+**断点续接**：默认用 `SqliteSessionStore` 把每段处理后的 state 落盘到
+`output_stream/sessions.db`。进程崩溃/重启后，用同一个 `--session-id` 再跑，会从
+磁盘读回上次的 state、从中断处继续（`current_chunk_index` 接着递增）；不同
+`--session-id` 之间互相隔离。
+
 ## 待办
 
-`streaming_app` 已经把"流式 + 背压 + 并发"的主干跑通，剩下几处仍是占位/凑合，
-按优先级：
+`streaming_app` 已经把"流式 + 背压 + 并发 + 断点续接"的主干跑通，剩下几处仍是
+占位/凑合，按优先级：
 
-- **会话存储落地**：把 `InMemorySessionStore` 换成 Redis/Postgres（`load`=反序列化、
-  `save`=序列化），实现断点续接，避免进程崩溃丢状态（接口已留好，worker 不用改）
+- ✅ **会话存储落地**（已完成）：`SqliteSessionStore` 把 state 序列化到本地 SQLite，
+  支持进程崩溃/重启后断点续接。后续上多机时可按同样的 `load`/`save` 接口换成
+  Redis/Postgres，worker 不用改。
 - **修订/合并改后台任务**：把"每5段轻整理、每10段全量重跑"从 worker 主循环抽成
   独立后台任务，并引入摘要/向量检索，避免 `full_transcript_text` 随对话无限变长
 - **多会话并发**：会话注册表管理多个 `SessionWorker` + 带限流的共享 LLM 客户端池

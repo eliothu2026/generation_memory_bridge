@@ -23,7 +23,7 @@ from narrator_flow.state import NarratorFlowState, TranscriptChunk
 from .analyzer import Analyzer, CrewPipelines
 from .coalescing_queue import CoalescedBatch, CoalescingQueue
 from .producer import simulated_asr
-from .session_store import InMemorySessionStore
+from .session_store import InMemorySessionStore, SqliteSessionStore
 from .worker import SessionWorker
 
 
@@ -43,7 +43,13 @@ def _make_printer(queue: CoalescingQueue):
 async def main_async(args: argparse.Namespace) -> None:
     load_dotenv()
 
-    store = InMemorySessionStore()
+    if args.store == "sqlite":
+        store = SqliteSessionStore(db_path=args.db_path)
+        print(f"[存储] SQLite: {args.db_path}（会话 {args.session_id} 可断点续接）")
+    else:
+        store = InMemorySessionStore()
+        print("[存储] 内存（进程退出即丢失）")
+
     queue = CoalescingQueue(maxsize=args.queue_maxsize)
     pipelines = CrewPipelines(output_dir=Path(args.output_dir))
     analyzer = Analyzer(pipelines)
@@ -73,6 +79,10 @@ def run() -> None:
     parser.add_argument("--segment-delay", type=float, default=0.05,
                         help="模拟 ASR 片段之间的间隔（秒），调小可加剧背压")
     parser.add_argument("--queue-maxsize", type=int, default=1000)
+    parser.add_argument("--store", choices=["sqlite", "memory"], default="sqlite",
+                        help="会话存储后端：sqlite=可断点续接(默认)，memory=退出即丢")
+    parser.add_argument("--db-path", default="output_stream/sessions.db",
+                        help="SQLite 数据库文件路径（--store sqlite 时生效）")
     args = parser.parse_args()
     asyncio.run(main_async(args))
 

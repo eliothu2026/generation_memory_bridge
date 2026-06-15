@@ -89,3 +89,5 @@ temp/
 # ==============================
 output/
 output_gui/
+output_stream/
+*.db
