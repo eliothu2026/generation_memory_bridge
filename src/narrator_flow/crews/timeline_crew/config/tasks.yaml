@@ -1,0 +1,51 @@
+incremental_update_task:
+  description: >
+    以下是已有的结构化时间线大纲（JSON）：
+    {current_outline}
+
+    以下是新增的一段讲述内容（第 {chunk_index} 段）：
+    "{new_chunk_text}"
+
+    请基于新内容更新时间线大纲：
+    1. 如果新内容补充或修正了已有事件，更新对应条目（保留 source_chunk_indices 并追加本段索引）
+    2. 如果是全新事件，按推断的时间顺序（order 字段）插入到合适位置
+    3. 尽量标注事件之间的因果关系（cause/effect）
+    4. 对于暂时无法确定时间归属或因果关系的内容，加入 open_threads，
+       后续如果新内容能澄清，再从 open_threads 中移除
+    5. 不要丢弃已有事件，只做增量补充和修正
+    最后生成一段简洁的 markdown 格式大纲文本写入 raw_outline_text。
+  expected_output: >
+    更新后的完整时间线大纲，符合 LogicOutlineState 结构（events、open_threads、raw_outline_text）。
+  agent: timeline_organizer
+
+refine_task:
+  description: >
+    以下是当前时间线大纲（JSON）：
+    {current_outline}
+
+    请对其进行一次轻量整理（不要引入任何新信息）：
+    1. 合并描述重复或高度相似的事件
+    2. 调整 events 的 order，使整体顺序更连贯合理
+    3. 检查 open_threads 中是否有可以根据现有 events 信息澄清归属的项，
+       如果可以，将其转化为正式事件并从 open_threads 移除
+    4. 重新生成 markdown 格式的 raw_outline_text
+  expected_output: >
+    整理后的时间线大纲，符合 LogicOutlineState 结构。
+  agent: timeline_organizer
+
+full_rerun_task:
+  description: >
+    以下是迄今为止收到的完整讲述记录（按段落顺序拼接）：
+    ---
+    {full_transcript}
+    ---
+
+    请完全基于以上全文，重新构建一份时间线大纲，忽略此前的中间结果，
+    避免增量更新过程中可能累积的偏差或遗漏：
+    1. 提取所有可识别的事件，按推断的时间顺序排列（order 字段从 1 开始）
+    2. 标注因果关系（cause/effect），并记录每个事件来自哪些段落（source_chunk_indices）
+    3. 对无法确定时间归属的内容放入 open_threads
+    4. 生成 markdown 格式的 raw_outline_text
+  expected_output: >
+    全新生成的时间线大纲，符合 LogicOutlineState 结构。
+  agent: timeline_organizer

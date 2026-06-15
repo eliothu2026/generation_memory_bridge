@@ -1,0 +1,24 @@
+incremental_background_task:
+  description: >
+    已有的背景知识笔记列表：
+    {current_notes}
+
+    当前对年代/地域/社会背景的估计：{current_era_estimate}（置信度 {confidence}）
+
+    新增的一段讲述内容（第 {chunk_index} 段）：
+    "{new_chunk_text}"
+
+    请：
+    1. 如果新内容包含可以推断年代、地域或社会背景的线索（例如特定历史名词、
+       器物、制度、生活方式等），更新 era_estimate 为更准确/具体的描述，
+       并相应调整 confidence（0-1）。如果新证据与旧判断冲突，仍保留对
+       理解有帮助的旧信息，但在新笔记中说明"修正"。
+    2. 为新发现的背景概念追加新的笔记条目到 notes 列表中（每条笔记应
+       简明扼要地解释一个时代背景概念，方便听众理解）。绝对不要删除
+       或覆盖 notes 中已有的条目，只能在末尾追加新条目。
+    3. 如果本段没有新增可用于推断背景的信息，原样返回当前的 notes、
+       era_estimate、confidence（不做任何删减）。
+  expected_output: >
+    更新后的背景知识状态，符合 BackgroundKnowledgeState 结构
+    （era_estimate、confidence、notes，notes 数量应 >= 输入时的数量）。
+  agent: background_researcher

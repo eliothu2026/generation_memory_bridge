@@ -1,0 +1,51 @@
+anchor_incremental_task:
+  description: >
+    当前候选锚点物件：{candidate_name}（已被提及约 {mention_count} 次）
+    当前已知的视觉细节描述列表：{descriptive_attributes}
+    当前的英文图像生成提示词：
+    "{current_prompt}"
+
+    新增的一段讲述内容（第 {chunk_index} 段）：
+    "{new_chunk_text}"
+
+    请：
+    1. 判断本段是否再次提及了当前候选物件，或者出现了新的、可能成为
+       高频锚点的具体物件/地点/意象。如果新物件比当前候选物件更高频
+       或更核心，可以切换 candidate_name（切换时 mention_count 和
+       descriptive_attributes 应重新统计/整理，但仍可保留与新候选
+       相关的旧信息）。
+    2. 如果本段提及了候选物件，mention_count 加一，并提取本段中关于
+       它的新视觉细节（颜色、材质、形状、磨损程度、所处场景、周围环境、
+       光线/氛围等），追加到 descriptive_attributes（避免重复）。
+    3. 基于累积的 descriptive_attributes，更新/扩展 image_prompt
+       （必须是英文，描述要具体、可视化，适合输入图像生成模型）。
+    4. 给出 prompt_detail_score（0.0-1.0），评估当前 image_prompt 的
+       详实程度。评分时考虑是否覆盖了：主体本身、材质/颜色、
+       状态/磨损、所处场景/背景、光线/氛围 这五个维度，覆盖越全分越高。
+    5. 如果 prompt_detail_score >= 0.8，将 is_ready_for_generation 设为 true，
+       否则为 false。image_generated/image_path 暂不修改，保持传入值。
+  expected_output: >
+    更新后的锚点物件状态，符合 AnchorObjectState 结构。
+  agent: anchor_curator
+
+anchor_full_regen_task:
+  description: >
+    候选锚点物件：{candidate_name}
+    已积累的视觉细节描述列表：{descriptive_attributes}
+
+    以下是迄今为止收到的完整讲述记录：
+    ---
+    {full_transcript}
+    ---
+
+    请基于全文，重新撰写一份完整、详尽、结构化的英文图像生成提示词
+    （image_prompt），确保覆盖：主体本身、材质/颜色、状态/磨损、
+    所处场景/背景、光线/氛围 这五个维度，并尽量纳入全文中所有与该
+    物件相关的细节。同时给出最终的 prompt_detail_score（应 >= 0.8），
+    并将 is_ready_for_generation 设为 true。mention_count 和
+    descriptive_attributes 可以根据全文重新整理。image_generated/
+    image_path 暂不修改，保持传入值。
+  expected_output: >
+    重新生成后的锚点物件状态，符合 AnchorObjectState 结构，
+    image_prompt 为完整英文提示词文本。
+  agent: anchor_curator
