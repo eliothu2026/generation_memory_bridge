@@ -51,7 +51,12 @@ async def main_async(args: argparse.Namespace) -> None:
         print("[存储] 内存（进程退出即丢失）")
 
     queue = CoalescingQueue(maxsize=args.queue_maxsize)
-    pipelines = CrewPipelines(output_dir=Path(args.output_dir))
+    if args.demo:
+        from .replay import ReplayPipelines
+        print("[免 key 演示] 回放预录结果，不调用 DeepSeek。")
+        pipelines = ReplayPipelines(output_dir=Path(args.output_dir), think_delay=0.2)
+    else:
+        pipelines = CrewPipelines(output_dir=Path(args.output_dir))
     analyzer = Analyzer(pipelines)
     worker = SessionWorker(
         session_id=args.session_id,
@@ -83,6 +88,8 @@ def run() -> None:
                         help="会话存储后端：sqlite=可断点续接(默认)，memory=退出即丢")
     parser.add_argument("--db-path", default="output_stream/sessions.db",
                         help="SQLite 数据库文件路径（--store sqlite 时生效）")
+    parser.add_argument("--demo", action="store_true",
+                        help="免 key 演示：回放预录结果，不调用任何 LLM")
     args = parser.parse_args()
     asyncio.run(main_async(args))
 

@@ -17,17 +17,33 @@ from typing import Optional
 
 from narrator_flow.state import NarratorFlowState, TranscriptChunk
 
-from .analyzer import Analyzer, CrewPipelines
+from .analyzer import Analyzer, CrewPipelines, Pipelines
 
 
 class NarratorSession:
     """持有一份 NarratorFlowState，对外提供同步的逐段分析与输出落盘。"""
 
-    def __init__(self, output_dir: str | Path = "output") -> None:
+    def __init__(self, output_dir: str | Path = "output",
+                 pipelines: Pipelines | None = None) -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.state = NarratorFlowState()
-        self.analyzer = Analyzer(CrewPipelines(self.output_dir))
+        # 默认走真实 LLM（CrewPipelines）；传入 pipelines 可换成回放等其他实现
+        self.analyzer = Analyzer(pipelines or CrewPipelines(self.output_dir))
+
+    @classmethod
+    def demo(cls, output_dir: str | Path = "output_demo",
+             fixture_path: str | Path | None = None,
+             think_delay: float = 0.0) -> "NarratorSession":
+        """免 key 演示模式：用预录回放，不调用任何 LLM。"""
+        from .replay import DEFAULT_FIXTURE, ReplayPipelines
+        out = Path(output_dir)
+        pipelines = ReplayPipelines(
+            fixture_path=fixture_path or DEFAULT_FIXTURE,
+            output_dir=out,
+            think_delay=think_delay,
+        )
+        return cls(output_dir=out, pipelines=pipelines)
 
     def process_chunk(self, chunk: TranscriptChunk) -> None:
         """同步处理一段：内部跑一次 async 的三流水线并发分析。"""

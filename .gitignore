@@ -90,4 +90,5 @@ temp/
 output/
 output_gui/
 output_stream/
+output_demo/
 *.db
