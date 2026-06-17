@@ -102,6 +102,12 @@ pip install -e ".[asr]"     # 安装 ASR 可选依赖（与核心依赖分离，
 python -m narrator_flow.streaming_app.run_stream --audio 你的录音.wav --asr-model small
 ```
 
+> 🇨🇳 **国内网络下载模型超时？** faster-whisper 默认从 huggingface.co 下载模型，
+> 国内常连不上。设置镜像后重试即可（只需一次，模型会缓存到本地）：
+> ```bash
+> export HF_ENDPOINT=https://hf-mirror.com
+> ```
+
 > 没有现成录音？macOS 可一行生成测试音频：
 > `say -v Tingting "我们家门口有棵大槐树，特别粗" -o test.aiff`，再 `--audio test.aiff`。
 

@@ -36,7 +36,15 @@ def _load_model(model_size: str):
             '    pip install -e ".[asr]"'
         ) from e
     # CPU + int8 量化：无需 GPU，体积/速度对个人机器友好
-    model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    try:
+        model = WhisperModel(model_size, device="cpu", compute_type="int8")
+    except Exception as e:  # noqa: BLE001 — 多为模型下载失败，给出可操作提示
+        raise RuntimeError(
+            f"加载语音模型 '{model_size}' 失败：{e}\n"
+            "首次使用需联网下载模型。若是下载超时（国内网络常无法访问 "
+            "huggingface.co），请改用镜像后重试：\n"
+            "    export HF_ENDPOINT=https://hf-mirror.com"
+        ) from e
     _MODEL_CACHE[model_size] = model
     return model
 
