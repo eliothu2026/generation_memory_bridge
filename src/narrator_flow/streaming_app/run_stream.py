@@ -66,11 +66,19 @@ async def main_async(args: argparse.Namespace) -> None:
         on_update=_make_printer(queue),
     )
 
-    # producer 与 worker 同时跑：上游快速喂片段，worker 慢速合并消费
-    await asyncio.gather(
-        simulated_asr(queue, args.transcript, segment_delay=args.segment_delay),
-        worker.run(),
-    )
+    # 选择输入 producer：给了 --audio 用真实 ASR，否则用模拟文本流
+    if args.audio:
+        from .asr import transcribe_file_to_queue
+        print(f"[ASR] 真实语音识别：{args.audio}（模型 {args.asr_model}）")
+        producer = transcribe_file_to_queue(
+            queue, args.audio, model_size=args.asr_model,
+            language=args.asr_language, pacing=args.segment_delay,
+        )
+    else:
+        producer = simulated_asr(queue, args.transcript, segment_delay=args.segment_delay)
+
+    # producer 与 worker 同时跑：上游喂片段，worker 合并消费
+    await asyncio.gather(producer, worker.run())
 
     print("\n=== 完成 ===")
     print(f"会话 {args.session_id} 的最终状态在 store 中；输出快照见 {args.output_dir}/")
@@ -90,6 +98,11 @@ def run() -> None:
                         help="SQLite 数据库文件路径（--store sqlite 时生效）")
     parser.add_argument("--demo", action="store_true",
                         help="免 key 演示：回放预录结果，不调用任何 LLM")
+    parser.add_argument("--audio", default=None,
+                        help="音频文件路径；给定后用真实 ASR（faster-whisper）替代模拟文本输入")
+    parser.add_argument("--asr-model", default="small",
+                        help="faster-whisper 模型大小：tiny/base/small/medium/large")
+    parser.add_argument("--asr-language", default="zh", help="识别语言，默认中文 zh")
     args = parser.parse_args()
     asyncio.run(main_async(args))
 

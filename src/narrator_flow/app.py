@@ -91,7 +91,10 @@ def render_pipelines(state) -> None:
 # 模式选择
 # ----------------------------------------------------------------------
 st.sidebar.title("控制面板")
-mode = st.sidebar.radio("模式", ["预制 Demo 播放", "自由输入（实时模拟）"])
+mode = st.sidebar.radio(
+    "模式",
+    ["预制 Demo 播放", "自由输入（实时模拟）", "🎙️ 音频上传（真实 ASR）"],
+)
 
 
 # ========================================================================
@@ -186,7 +189,7 @@ if mode == "预制 Demo 播放":
 # ========================================================================
 # 模式二：自由输入（实时模拟真实使用场景）
 # ========================================================================
-else:
+elif mode == "自由输入（实时模拟）":
 
     def init_free_state() -> None:
         st.session_state.free_session = NarratorSession(output_dir=Path("output_gui/free"))
@@ -234,3 +237,79 @@ else:
         st.rerun()
 
     render_pipelines(state)
+
+
+# ========================================================================
+# 模式三：音频上传（真实 ASR → 真实分析）
+# ========================================================================
+else:
+    import tempfile
+
+    st.sidebar.info(
+        "上传一段口述录音，用本地 faster-whisper 转成文字后，逐段送入三条流水线分析。"
+        "\n\n注意：① 需先安装 ASR 依赖 `pip install -e \".[asr]\"`；"
+        "② 分析调用真实 DeepSeek，需在 .env 配置 key。"
+    )
+    asr_model = st.sidebar.selectbox(
+        "ASR 模型大小", ["tiny", "base", "small", "medium"], index=2,
+        help="越大越准越慢；small 在中文与速度间较平衡。首次使用会下载模型。",
+    )
+
+    def init_audio_state() -> None:
+        st.session_state.audio_session = NarratorSession(output_dir=Path("output_gui/audio"))
+        st.session_state.audio_chunks = []
+        st.session_state.audio_cursor = 0
+        st.session_state.audio_history = []
+        st.session_state.audio_name = None
+
+    if "audio_session" not in st.session_state:
+        init_audio_state()
+
+    st.title("🎙️ 口述史实时分析 Agent — 音频上传（真实 ASR）")
+
+    uploaded = st.file_uploader("上传录音文件", type=["wav", "mp3", "m4a", "flac", "ogg"])
+
+    # 新文件上传后：转写成片段
+    if uploaded is not None and uploaded.name != st.session_state.get("audio_name"):
+        init_audio_state()
+        st.session_state.audio_name = uploaded.name
+        suffix = Path(uploaded.name).suffix
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(uploaded.getbuffer())
+            tmp_path = tmp.name
+        try:
+            from narrator_flow.streaming_app.asr import transcribe_to_chunks
+            with st.spinner(f"正在用 faster-whisper（{asr_model}）转写音频，首次会下载模型，请稍候…"):
+                st.session_state.audio_chunks = transcribe_to_chunks(tmp_path, model_size=asr_model)
+            st.success(f"转写完成：共 {len(st.session_state.audio_chunks)} 个片段。")
+        except RuntimeError as e:
+            st.error(str(e))
+        except Exception as e:  # noqa: BLE001
+            st.error(f"转写失败：{e}")
+
+    chunks = st.session_state.audio_chunks
+    if chunks:
+        with st.expander("转写全文（ASR 结果）", expanded=True):
+            for c in chunks:
+                done = "✅" if c.index < st.session_state.audio_cursor else "⏳"
+                st.markdown(f"{done} **[{c.index + 1}]** {c.text}")
+
+        total = len(chunks)
+        cursor = st.session_state.audio_cursor
+        col_a, col_b = st.sidebar.columns(2)
+        step_clicked = col_a.button("▶ 分析下一段", use_container_width=True)
+        reset_clicked = col_b.button("⟲ 重置分析", use_container_width=True)
+        st.sidebar.progress(cursor / total if total else 0, text=f"已分析 {cursor}/{total} 段")
+
+        if reset_clicked:
+            sess = NarratorSession(output_dir=Path("output_gui/audio"))
+            st.session_state.audio_session = sess
+            st.session_state.audio_cursor = 0
+            st.rerun()
+
+        if step_clicked and cursor < total:
+            process_chunk(st.session_state.audio_session, chunks[cursor])
+            st.session_state.audio_cursor += 1
+            st.rerun()
+
+    render_pipelines(st.session_state.audio_session.state)

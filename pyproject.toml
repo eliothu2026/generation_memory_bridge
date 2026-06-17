@@ -9,6 +9,14 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+# 真实 ASR（语音识别）为可选附加项：只有需要把音频转文字的人才安装，
+# 不强加给"只看文本 demo / 免 key 演示"的轻量用户。
+# 安装：pip install -e ".[asr]"
+[project.optional-dependencies]
+asr = [
+    "faster-whisper>=1.0",
+]
+
 [project.scripts]
 narrator_flow = "narrator_flow.main:run"
 
