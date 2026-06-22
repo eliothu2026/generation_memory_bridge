@@ -72,6 +72,7 @@ class NarratorFlowState(BaseModel):
     all_chunks: List[TranscriptChunk] = Field(default_factory=list)
     current_chunk_index: int = -1
     full_transcript_text: str = ""
+    background_update_count: int = 0  # 背景流水线更新次数（用于触发考据 agent 的节奏）
 
     logic_outline: LogicOutlineState = Field(default_factory=LogicOutlineState)
     background: BackgroundKnowledgeState = Field(default_factory=BackgroundKnowledgeState)

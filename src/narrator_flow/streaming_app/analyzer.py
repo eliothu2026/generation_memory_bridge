@@ -51,7 +51,9 @@ class CrewPipelines:
         self.output_dir = Path(output_dir)
         (self.output_dir / "generated_images").mkdir(parents=True, exist_ok=True)
 
-    # ---- 流水线 B：背景知识（纯增量） ----
+    # ---- 流水线 B：背景知识（纯增量）+ 每 3 次触发考据 agent ----
+    FACT_CHECK_EVERY = 3
+
     async def background(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
         result = await asyncio.to_thread(
             lambda: BackgroundCrew().crew().kickoff(
@@ -68,6 +70,14 @@ class CrewPipelines:
         existing = state.background.notes
         new_state.notes = existing + [n for n in new_state.notes if n not in existing]
         state.background = new_state
+
+        # 每累积 FACT_CHECK_EVERY 次背景更新，串行触发一次考据核验
+        state.background_update_count += 1
+        if state.background_update_count % self.FACT_CHECK_EVERY == 0:
+            from .fact_checker import FactChecker
+            state.background = await asyncio.to_thread(
+                FactChecker().verify, state.background
+            )
 
     # ---- 流水线 A：逻辑大纲（按节奏分发） ----
     async def logic(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
