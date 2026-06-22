@@ -20,6 +20,8 @@ from .coalescing_queue import CoalescingQueue
 
 DEFAULT_MODEL = "small"   # tiny/base/small/medium/large；small 在中文与速度间较平衡
 DEFAULT_LANGUAGE = "zh"
+# 领域提示词：把识别往"普通话口述往事"方向引，减少怪字/方言误识
+DOMAIN_PROMPT = "以下是一位长辈用普通话讲述过去经历的录音。"
 
 # 进程内缓存已加载的模型，避免每次转写都重新加载（Streamlit 多次 rerun 时尤为重要）
 _MODEL_CACHE: Dict[str, object] = {}
@@ -60,6 +62,7 @@ def transcribe_segments(
         str(audio_path),
         language=language,
         vad_filter=True,   # 用 VAD 过滤静音，切分更干净、更接近"话轮"
+        initial_prompt=DOMAIN_PROMPT,
     )
     return [seg.text.strip() for seg in segments if seg.text and seg.text.strip()]
 

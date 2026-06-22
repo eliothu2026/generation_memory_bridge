@@ -87,7 +87,10 @@ def transcribe_pcm16(pcm16: bytes, model_size: str = "tiny", language: str = "zh
     if samples.size == 0:
         return ""
     model = asr._load_model(model_size)
-    segments, _info = model.transcribe(samples, language=language, vad_filter=False)
+    segments, _info = model.transcribe(
+        samples, language=language, vad_filter=False,
+        initial_prompt=asr.DOMAIN_PROMPT,
+    )
     return "".join(s.text for s in segments).strip()
 
 
