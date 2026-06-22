@@ -331,10 +331,10 @@ else:
 
     st.title("📞 实时通话 — 实时字幕（实验·阶段1）")
     st.sidebar.info(
-        "用开源库 RealtimeSTT 抓**本机麦克风**：内含 VAD + faster-whisper，"
-        "边说边出字（实时部分结果 + 整句定稿）。"
+        "抓**本机麦克风**（sounddevice，自带 PortAudio）→ VAD 自动切句 → "
+        "faster-whisper 逐句转写为字幕。"
         "\n\n阶段1 只验证'麦→字幕'链路，暂不接入分析。"
-        "\n需安装：`pip install -e \".[live]\"`（macOS 先 `brew install portaudio`）；"
+        "\n需安装：`pip install -e \".[live]\"`（纯 pip，无需 Homebrew）；"
         "首次会下载语音模型（国内设 HF 镜像）。"
     )
     asr_model = st.sidebar.selectbox("ASR 模型大小", ["tiny", "base", "small"], index=0,
@@ -371,6 +371,9 @@ else:
     rec = st.session_state.live_rec
     status = st.empty()
     transcript_box = st.empty()
+
+    if rec is not None and rec.error:
+        st.error(f"麦克风/转写出错：{rec.error}")
 
     if rec is not None:
         sentences, partial = rec.snapshot()

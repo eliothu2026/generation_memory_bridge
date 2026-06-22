@@ -17,11 +17,13 @@ dependencies = [
 asr = [
     "faster-whisper>=1.0",
 ]
-# 实时通话模式（连续本机麦克风）：用开源库 RealtimeSTT（内含 VAD + faster-whisper）。
-# 抓的是运行机器的本机麦，适合本地 demo。安装：pip install -e ".[live]"
-# macOS 还需先 `brew install portaudio`（pyaudio 依赖）。
+# 实时通话模式（连续本机麦克风）：sounddevice 取流 + webrtcvad 切句 + faster-whisper。
+# sounddevice 的 wheel 自带 PortAudio，纯 pip 即可，无需 Homebrew/系统库。
+# 安装：pip install -e ".[live]"
 live = [
-    "RealtimeSTT>=0.3",
+    "sounddevice>=0.4",
+    "webrtcvad>=2.0",
+    "faster-whisper>=1.0",
 ]
 
 [project.scripts]

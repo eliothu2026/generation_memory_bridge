@@ -138,10 +138,10 @@ streamlit run src/narrator_flow/app.py   # 浏览器打开 http://localhost:8501
   模拟真实的边听边记场景（此模式需要真实 key）。
 - **🎙️ 音频上传（真实 ASR）**：上传一段录音，用本地 faster-whisper 转成文字，
   先展示转写全文，再逐段送入三条流水线分析（需 `pip install -e ".[asr]"` 与真实 key）。
-- **📞 实时通话（实验·阶段1）**：用开源库 **RealtimeSTT**（内含 VAD + faster-whisper）
-  抓**本机麦克风**，边说边出字（实时部分结果 + 整句定稿），体验"保持通话"式输入
-  （需 `pip install -e ".[live]"`，macOS 先 `brew install portaudio`）。阶段1 只验证
-  "麦→字幕"链路，分析接入与说话人分离见路线图。
+- **📞 实时通话（实验·阶段1）**：抓**本机麦克风**（`sounddevice`，wheel 自带 PortAudio、
+  纯 pip 无需 Homebrew）→ VAD 自动切句 → faster-whisper 逐句转写为实时字幕，体验
+  "保持通话"式输入（需 `pip install -e ".[live]"`）。阶段1 只验证"麦→字幕"链路，
+  分析接入与说话人分离见路线图。
 
 > ⏱️ 注意：真实模式下每处理一段会触发 3 次 LLM 调用，单段通常需 1–2 分钟；
 > 免 key 演示模式则是瞬时回放。
