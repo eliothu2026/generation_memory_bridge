@@ -37,6 +37,8 @@ def _make_printer(queue: CoalescingQueue):
         print(f"  [背景] 年代={b.era_estimate or '未知'} 笔记={len(b.notes)}")
         print(f"  [锚点] {a.candidate_name or '未确定'} 提及{a.mention_count} "
               f"细节分{a.prompt_detail_score:.2f} 已生图={a.image_generated}")
+        if state.follow_up_questions:
+            print(f"  [建议追问] {' / '.join(state.follow_up_questions)}")
     return on_update
 
 

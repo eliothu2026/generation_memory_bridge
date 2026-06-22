@@ -62,6 +62,8 @@ class NarratorSession:
             f"[背景知识] 年代估计: {b.era_estimate or '未知'} | 笔记条数: {len(b.notes)}\n"
             f"[锚点物件] 候选: \"{a.candidate_name or '未确定'}\" (提及{a.mention_count}次) "
             f"| 提示词细节分: {a.prompt_detail_score:.2f} | 已生图: {a.image_generated}"
+            + (("\n[建议追问] " + " / ".join(self.state.follow_up_questions))
+               if self.state.follow_up_questions else "")
         )
 
     def dump_outputs(self) -> None:

@@ -40,6 +40,13 @@ def process_chunk(session: NarratorSession, chunk: TranscriptChunk, demo: bool =
 # 三条流水线结果展示（两种模式共用）
 # ----------------------------------------------------------------------
 def render_pipelines(state) -> None:
+    # 第 4 条流水线：给年轻人的"建议追问"——最贴近对话当下、最可行动，放在最上方
+    if getattr(state, "follow_up_questions", None):
+        st.markdown("#### 💡 建议你可以这样追问")
+        for q in state.follow_up_questions:
+            st.success(q)
+        st.caption("（这些是给“听的人”的实时建议，不会写入记忆档案；不想问可忽略）")
+
     col1, col2, col3 = st.columns(3)
 
     with col1:

@@ -79,3 +79,6 @@ class NarratorFlowState(BaseModel):
     logic_outline: LogicOutlineState = Field(default_factory=LogicOutlineState)
     background: BackgroundKnowledgeState = Field(default_factory=BackgroundKnowledgeState)
     anchor: AnchorObjectState = Field(default_factory=AnchorObjectState)
+
+    # 第 4 条流水线：给年轻人的"建议追问"。临时性，仅保留最新一轮（不累积、不入档案）
+    follow_up_questions: List[str] = Field(default_factory=list)

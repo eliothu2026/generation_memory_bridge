@@ -62,6 +62,12 @@ class ReplayPipelines:
         if snap and "logic_outline" in snap:
             state.logic_outline = LogicOutlineState.model_validate(snap["logic_outline"])
 
+    async def follow_up(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
+        await self._tick()
+        snap = self.snapshots.get(chunk.index)
+        # 临时性：每段覆盖为快照里的预录建议（没有则清空）
+        state.follow_up_questions = list(snap.get("follow_up", [])) if snap else []
+
     async def anchor(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
         await self._tick()
         snap = self.snapshots.get(chunk.index)

@@ -1,8 +1,8 @@
 """单段分析（Layer 2，方案3：不依赖任何 agent 框架）。
 
-三条流水线（背景/逻辑/锚点）直接用 llm_client 调 DeepSeek + Pydantic 解析，
-不再经 CrewAI。每个 LLM 调用用 asyncio.to_thread 跑在线程里，三条用 asyncio.gather
-并发。Pipelines 接口不变 → 流式/GUI/CLI/免key 回放全部无需改动。
+四条流水线（背景/逻辑/锚点/建议追问）直接用 llm_client 调 DeepSeek + Pydantic 解析，
+不再经 CrewAI。每个 LLM 调用用 asyncio.to_thread 跑在线程里，用 asyncio.gather 并发。
+Pipelines 接口不变 → 流式/GUI/CLI/免key 回放全部无需改动。
 
 Prompt 由原 crews/*/config 的 agents.yaml(角色) + tasks.yaml(任务) 移植而来。
 """
@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Protocol
+from typing import List, Protocol
+
+from pydantic import BaseModel, Field
 
 from narrator_flow.state import (
     AnchorObjectState,
@@ -44,6 +46,17 @@ _ANCHOR_SYS = (
     "逐步整理成详尽、具体、适合 AI 图像生成模型的英文提示词。你会持续追踪一个最主要的候选"
     "物件，统计提及次数，并客观评估提示词的详实程度。"
 )
+_FOLLOWUP_SYS = (
+    "你是一个陪年轻人听长辈讲往事的对话助手。你的任务：在长辈刚说完一段后，替年轻人想"
+    "1–2 个**具体、自然、口语化**的追问，帮他把对话接下去、并挖掘更完整的细节"
+    "（人物、时间、地点、过程、感受等）。要求：①紧扣长辈刚说的内容，不要泛泛而问；"
+    "②像孙辈会脱口而出的那样亲切，不要像采访提纲；③如果这段已经讲得很完整、或实在没有"
+    "值得追问的点，就返回空列表——**宁可不提示，也不要为了提示而提示**（避免打扰真实对话）。"
+)
+
+
+class FollowUpResult(BaseModel):
+    questions: List[str] = Field(default_factory=list, description="0-2 个建议追问，空列表表示无需追问")
 
 
 def ingest(state: NarratorFlowState, chunk: TranscriptChunk) -> None:
@@ -58,6 +71,7 @@ class Pipelines(Protocol):
     async def background(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None: ...
     async def logic(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None: ...
     async def anchor(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None: ...
+    async def follow_up(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None: ...
 
 
 class LLMPipelines:
@@ -206,6 +220,20 @@ class LLMPipelines:
             anchor.image_generated = True
             anchor.image_path = str(image_path)
 
+    # ---- 流水线 D：建议追问（服务对话当下，不入档案；自我克制） ----
+    async def follow_up(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
+        user = (
+            f"长辈刚刚说的一段（第 {chunk.index} 段）：\n\"{chunk.text}\"\n\n"
+            "请替年轻人想 1–2 个具体、自然的追问；若无值得追问的点，questions 返回空列表。"
+        )
+        result: FollowUpResult = await asyncio.to_thread(
+            llm_client.structured,
+            [{"role": "system", "content": _FOLLOWUP_SYS}, {"role": "user", "content": user}],
+            FollowUpResult,
+        )
+        # 临时性：每段覆盖为最新建议（解析失败则清空，不沿用旧建议）
+        state.follow_up_questions = result.questions[:2] if result is not None else []
+
 
 class Analyzer:
     """编排：ingest 后并发跑三条流水线。"""
@@ -219,4 +247,5 @@ class Analyzer:
             self.pipelines.background(state, chunk),
             self.pipelines.logic(state, chunk),
             self.pipelines.anchor(state, chunk),
+            self.pipelines.follow_up(state, chunk),
         )

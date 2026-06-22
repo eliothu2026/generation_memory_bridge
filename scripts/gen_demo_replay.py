@@ -174,10 +174,25 @@ anchor(17, 10, 0.90, True, _P_FULL,
        "承载童年与家族记忆的情感地标")
 
 # ----------------------------------------------------------------------
+# 流水线 D：建议追问（临时性，按段给当下的 0–2 个追问；故意有些段为空）
+# ----------------------------------------------------------------------
+_followup_at = {
+    0: ["这棵大槐树现在还在吗？", "你小时候最常在树底下玩什么？"],
+    1: ["那台拖拉机是什么牌子的，还记得吗？", "你爸开拖拉机帮过谁家最难忘的忙？"],
+    3: ["记工分是怎么个记法，一天能记多少分？"],
+    4: ["你哥下乡去的是哪座山里？他写信回来都说些什么？"],
+    9: ["那个辘轳水井现在还在吗？打一桶水要摇多久？"],
+    11: ["包产到户之后，你家分到了多少地？"],
+    13: ["那年冬天到底有多冷？家里是怎么取暖的？"],
+    17: ["那张石桌现在还能坐人吗？你最近一次坐在那儿是什么时候？"],
+}
+
+# ----------------------------------------------------------------------
 # 合并为稀疏快照表
 # ----------------------------------------------------------------------
 snapshots = {}
-for idx in sorted(set(_background_at) | set(_logic_at) | set(_anchor_at)):
+_all_idx = set(_background_at) | set(_logic_at) | set(_anchor_at) | set(_followup_at)
+for idx in sorted(_all_idx):
     entry = {}
     if idx in _background_at:
         entry["background"] = _background_at[idx]
@@ -185,6 +200,8 @@ for idx in sorted(set(_background_at) | set(_logic_at) | set(_anchor_at)):
         entry["logic_outline"] = _logic_at[idx]
     if idx in _anchor_at:
         entry["anchor"] = _anchor_at[idx]
+    if idx in _followup_at:
+        entry["follow_up"] = _followup_at[idx]
     snapshots[str(idx)] = entry
 
 OUT.parent.mkdir(parents=True, exist_ok=True)
