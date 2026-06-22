@@ -82,15 +82,22 @@ class VADSegmenter:
 
 
 def transcribe_pcm16(pcm16: bytes, model_size: str = "tiny", language: str = "zh") -> str:
-    """把一句 PCM 转成文字（复用 asr 的本地 faster-whisper 模型）。"""
+    """把一句 PCM 转成文字（复用 asr 的本地 faster-whisper 模型）。
+
+    针对实时麦克风做了两个稳健化处理：
+    - 静音门：峰值过低的段直接跳过，不送进模型（否则 whisper 会把 prompt 念出来）；
+    - 峰值归一化：把偏小的麦克风信号放大到接近满量程，提升识别率。
+    实时路径**不加 initial_prompt**，避免弱信号时回声出提示词。
+    """
     samples = np.frombuffer(pcm16, dtype=np.int16).astype(np.float32) / 32768.0
     if samples.size == 0:
         return ""
+    peak = float(np.max(np.abs(samples)))
+    if peak < 0.005:          # 近乎静音 → 跳过
+        return ""
+    samples = samples / peak * 0.95   # 峰值归一化：放大偏小的信号
     model = asr._load_model(model_size)
-    segments, _info = model.transcribe(
-        samples, language=language, vad_filter=False,
-        initial_prompt=asr.DOMAIN_PROMPT,
-    )
+    segments, _info = model.transcribe(samples, language=language, vad_filter=False)
     return "".join(s.text for s in segments).strip()
 
 
