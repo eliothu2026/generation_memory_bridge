@@ -17,6 +17,12 @@ dependencies = [
 asr = [
     "faster-whisper>=1.0",
 ]
+# 实时通话模式（连续麦克风）：浏览器 WebRTC 抓麦 + VAD 切句。安装：pip install -e ".[live]"
+live = [
+    "faster-whisper>=1.0",
+    "streamlit-webrtc>=0.47",
+    "webrtcvad>=2.0",
+]
 
 [project.scripts]
 narrator_flow = "narrator_flow.main:run"
