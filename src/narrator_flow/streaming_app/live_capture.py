@@ -1,104 +1,81 @@
-"""实时通话模式的捕获层（阶段1：连续麦 → VAD 切句 → 逐句转写）。
+"""实时通话模式的捕获层（基于开源库 RealtimeSTT）。
 
-职责只有"把实时音频变成一句句文字"，下游分析照旧复用 NarratorSession（阶段2 再接）。
+不再手写 VAD/切句/重采样——改用成熟的 RealtimeSTT：它内部封装了"开本机麦 → 双重
+VAD（webrtc + Silero）→ faster-whisper 转写 → 实时部分结果 + 最终整句"。我们只做一层
+薄封装，把它接进 Streamlit。
 
-- VADSegmenter：用 webrtcvad（纯算法、不下模型）按静音自动切句；
-- frame_to_pcm16：把 WebRTC 的 av.AudioFrame 重采样为 16kHz 单声道 16-bit PCM；
-- transcribe_pcm16：把一句 PCM 交给 faster-whisper 转文字（复用 asr 的模型缓存）。
+设计：录音器在**后台线程**里循环取"下一句最终文本"，追加到线程安全的列表；实时
+部分文本通过回调更新。Streamlit 端轮询 snapshot() 渲染。
 
-依赖 streamlit-webrtc / webrtcvad 为可选组 [live]，本模块对它们惰性导入。
+RealtimeSTT 是可选依赖组 [live]，本模块对它惰性导入（未装时仅在真正启动录音器时报错）。
+
+注意：RealtimeSTT 抓的是**运行 Python 的这台机器的麦克风**（适合本地 demo）；它在
+macOS 上用 multiprocessing(spawn) 跑转写子进程，首次集成可能需要按其文档处理。
 """
 
 from __future__ import annotations
 
-from typing import List, Optional
-
-import numpy as np
-
-from . import asr
-
-SAMPLE_RATE = 16000
-FRAME_MS = 30  # webrtcvad 仅接受 10/20/30ms
+import threading
+from typing import List, Optional, Tuple
 
 
-class VADSegmenter:
-    """按"说话后跟随一段静音"自动切出整句。喂入 16kHz 单声道 16-bit PCM 字节。"""
+class LiveRecorder:
+    """RealtimeSTT 的薄封装：start/stop + 线程安全的转写快照。"""
 
-    def __init__(self, silence_ms: int = 700, aggressiveness: int = 2,
-                 min_utterance_ms: int = 300) -> None:
-        import webrtcvad  # 惰性导入
-        self._vad = webrtcvad.Vad(aggressiveness)
-        self._frame_bytes = int(SAMPLE_RATE * FRAME_MS / 1000) * 2  # 16-bit → ×2
-        self._silence_limit = max(1, silence_ms // FRAME_MS)
-        self._min_frames = max(1, min_utterance_ms // FRAME_MS)
-        self._buf = b""              # 不足一帧的余量
-        self._utt = bytearray()      # 当前句的音频
-        self._utt_frames = 0
-        self._in_speech = False
-        self._silence = 0
+    def __init__(self, model: str = "tiny", language: str = "zh") -> None:
+        from RealtimeSTT import AudioToTextRecorder  # 惰性导入
 
-    def add(self, pcm16: bytes) -> List[bytes]:
-        """喂入一段 PCM，返回这次新切出的整句列表（可能为空）。"""
-        out: List[bytes] = []
-        self._buf += pcm16
-        while len(self._buf) >= self._frame_bytes:
-            frame = self._buf[:self._frame_bytes]
-            self._buf = self._buf[self._frame_bytes:]
+        self._sentences: List[str] = []   # 已定稿的整句
+        self._partial: str = ""           # 当前正在说的实时部分文本
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: Optional[threading.Thread] = None
+
+        self._recorder = AudioToTextRecorder(
+            model=model,
+            language=language,
+            spinner=False,
+            enable_realtime_transcription=True,
+            on_realtime_transcription_update=self._on_partial,
+        )
+
+    # ---- RealtimeSTT 回调：实时部分文本 ----
+    def _on_partial(self, text: str) -> None:
+        with self._lock:
+            self._partial = text or ""
+
+    # ---- 后台循环：阻塞取下一整句 ----
+    def _loop(self) -> None:
+        while self._running:
             try:
-                speech = self._vad.is_speech(frame, SAMPLE_RATE)
-            except Exception:  # noqa: BLE001 — 帧长异常等，跳过该帧
-                continue
-            if speech:
-                self._in_speech = True
-                self._silence = 0
-                self._utt += frame
-                self._utt_frames += 1
-            elif self._in_speech:
-                self._silence += 1
-                self._utt += frame  # 含尾部静音
-                self._utt_frames += 1
-                if self._silence >= self._silence_limit:
-                    if self._utt_frames - self._silence >= self._min_frames:
-                        out.append(bytes(self._utt))  # 够长才算一句，滤掉咳嗽/杂音
-                    self._reset_utt()
-        return out
+                text = self._recorder.text()  # 阻塞，返回下一整句
+            except Exception:  # noqa: BLE001 — 关闭时可能抛异常
+                break
+            if text:
+                with self._lock:
+                    self._sentences.append(text.strip())
+                    self._partial = ""
 
-    def flush(self) -> Optional[bytes]:
-        """通话结束时取出残留的最后一句（如果有）。"""
-        u = bytes(self._utt) if self._utt_frames - self._silence >= self._min_frames else None
-        self._reset_utt()
-        return u
+    def start(self) -> None:
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
 
-    def _reset_utt(self) -> None:
-        self._utt = bytearray()
-        self._utt_frames = 0
-        self._in_speech = False
-        self._silence = 0
+    def stop(self) -> None:
+        self._running = False
+        try:
+            self._recorder.shutdown()
+        except Exception:  # noqa: BLE001
+            pass
 
+    def clear(self) -> None:
+        with self._lock:
+            self._sentences = []
+            self._partial = ""
 
-_resampler = None
-
-
-def frame_to_pcm16(frame) -> bytes:
-    """av.AudioFrame → 16kHz 单声道 16-bit PCM 字节。"""
-    global _resampler
-    import av
-    if _resampler is None:
-        _resampler = av.AudioResampler(format="s16", layout="mono", rate=SAMPLE_RATE)
-    out = _resampler.resample(frame)
-    frames = out if isinstance(out, list) else [out]  # av 版本差异：可能返回 list
-    chunks = []
-    for f in frames:
-        if f is not None:
-            chunks.append(f.to_ndarray().astype(np.int16).tobytes())
-    return b"".join(chunks)
-
-
-def transcribe_pcm16(pcm16: bytes, model_size: str = "small", language: str = "zh") -> str:
-    """把一句 PCM 转成文字（复用 asr 的本地 faster-whisper 模型）。"""
-    samples = np.frombuffer(pcm16, dtype=np.int16).astype(np.float32) / 32768.0
-    if samples.size == 0:
-        return ""
-    model = asr._load_model(model_size)
-    segments, _info = model.transcribe(samples, language=language, vad_filter=False)
-    return "".join(s.text for s in segments).strip()
+    def snapshot(self) -> Tuple[List[str], str]:
+        """返回 (已定稿整句列表, 当前实时部分文本)。"""
+        with self._lock:
+            return list(self._sentences), self._partial

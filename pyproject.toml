@@ -17,11 +17,11 @@ dependencies = [
 asr = [
     "faster-whisper>=1.0",
 ]
-# 实时通话模式（连续麦克风）：浏览器 WebRTC 抓麦 + VAD 切句。安装：pip install -e ".[live]"
+# 实时通话模式（连续本机麦克风）：用开源库 RealtimeSTT（内含 VAD + faster-whisper）。
+# 抓的是运行机器的本机麦，适合本地 demo。安装：pip install -e ".[live]"
+# macOS 还需先 `brew install portaudio`（pyaudio 依赖）。
 live = [
-    "faster-whisper>=1.0",
-    "streamlit-webrtc>=0.47",
-    "webrtcvad>=2.0",
+    "RealtimeSTT>=0.3",
 ]
 
 [project.scripts]

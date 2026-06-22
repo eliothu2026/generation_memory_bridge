@@ -324,83 +324,68 @@ elif mode == "🎙️ 音频上传（真实 ASR）":
 
 
 # ========================================================================
-# 模式四：实时通话（实验，阶段1：连续麦 → VAD 切句 → 实时字幕）
+# 模式四：实时通话（实验，阶段1：本机麦 → RealtimeSTT → 实时字幕）
 # ========================================================================
 else:
-    import queue as _queue
+    import time as _time
 
     st.title("📞 实时通话 — 实时字幕（实验·阶段1）")
     st.sidebar.info(
-        "连续麦克风 → VAD 自动切句 → faster-whisper 逐句转写为字幕。"
+        "用开源库 RealtimeSTT 抓**本机麦克风**：内含 VAD + faster-whisper，"
+        "边说边出字（实时部分结果 + 整句定稿）。"
         "\n\n阶段1 只验证'麦→字幕'链路，暂不接入分析。"
-        "\n需安装：`pip install -e \".[live]\"`；首次会下载语音模型（国内设 HF 镜像）。"
+        "\n需安装：`pip install -e \".[live]\"`（macOS 先 `brew install portaudio`）；"
+        "首次会下载语音模型（国内设 HF 镜像）。"
     )
     asr_model = st.sidebar.selectbox("ASR 模型大小", ["tiny", "base", "small"], index=0,
                                      help="实时场景建议 tiny/base 更跟手；small 更准但更慢。")
 
-    # 惰性导入可选依赖，缺了给友好提示而非崩溃
-    try:
-        from streamlit_webrtc import WebRtcMode, webrtc_streamer
-        from narrator_flow.streaming_app.live_capture import (
-            VADSegmenter, frame_to_pcm16, transcribe_pcm16,
-        )
-        _live_ok = True
-    except Exception as e:  # noqa: BLE001
-        _live_ok = False
-        st.error(f"实时通话依赖未就绪：{e}\n请运行：pip install -e \".[live]\"")
+    if "live_rec" not in st.session_state:
+        st.session_state.live_rec = None
+        st.session_state.live_running = False
 
-    if _live_ok:
-        if "live_transcript" not in st.session_state:
-            st.session_state.live_transcript = []
+    c1, c2, c3 = st.columns(3)
+    start_clicked = c1.button("▶ 开始通话", use_container_width=True,
+                              disabled=st.session_state.live_running)
+    stop_clicked = c2.button("⏹ 结束通话", use_container_width=True,
+                             disabled=not st.session_state.live_running)
+    clear_clicked = c3.button("🗑 清空字幕", use_container_width=True)
 
-        col_l, col_r = st.columns([1, 3])
-        with col_l:
-            if st.button("🗑 清空字幕", use_container_width=True):
-                st.session_state.live_transcript = []
-        with col_r:
-            st.caption("点击下方 START 并允许麦克风权限；说完一句停顿约 0.7s 即自动出字。")
+    if start_clicked:
+        try:
+            from narrator_flow.streaming_app.live_capture import LiveRecorder
+            with st.spinner("正在启动麦克风与语音模型…（首次较慢）"):
+                rec = LiveRecorder(model=asr_model)
+                rec.start()
+            st.session_state.live_rec = rec
+            st.session_state.live_running = True
+        except Exception as e:  # noqa: BLE001
+            st.error(f"启动失败：{e}\n请确认已 `pip install -e \".[live]\"`"
+                     f"（macOS 需 `brew install portaudio`）。")
+    if stop_clicked and st.session_state.live_rec:
+        st.session_state.live_rec.stop()
+        st.session_state.live_running = False
+    if clear_clicked and st.session_state.live_rec:
+        st.session_state.live_rec.clear()
 
-        webrtc_ctx = webrtc_streamer(
-            key="live-call",
-            mode=WebRtcMode.SENDONLY,
-            audio_receiver_size=512,
-            media_stream_constraints={"audio": True, "video": False},
-        )
+    rec = st.session_state.live_rec
+    status = st.empty()
+    transcript_box = st.empty()
 
-        status = st.empty()
-        transcript_box = st.empty()
+    if rec is not None:
+        sentences, partial = rec.snapshot()
+        body = "#### 实时字幕\n"
+        body += "\n".join(f"- {t}" for t in sentences) if sentences else "_（还没有内容）_"
+        if partial:
+            body += f"\n- *…{partial}*"   # 实时部分文本（斜体）
+        transcript_box.markdown(body)
+    else:
+        transcript_box.caption("点击「开始通话」并允许麦克风权限，对着麦说话试试。")
 
-        def _render_transcript() -> None:
-            lines = st.session_state.live_transcript
-            transcript_box.markdown(
-                "#### 实时字幕\n" + ("\n".join(f"- {t}" for t in lines) if lines
-                                     else "_（还没有内容，开始说话试试）_")
-            )
-
-        _render_transcript()
-
-        if webrtc_ctx.state.playing:
-            segmenter = VADSegmenter()
-            status.info("🎙️ 通话中…（持续聆听）")
-            while True:
-                try:
-                    frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
-                except _queue.Empty:
-                    status.warning("⏳ 等待音频…（确认已允许麦克风）")
-                    continue
-                except Exception:  # noqa: BLE001 — 连接已断开
-                    break
-                for frame in frames:
-                    try:
-                        pcm = frame_to_pcm16(frame)
-                    except Exception:  # noqa: BLE001
-                        continue
-                    for utt in segmenter.add(pcm):
-                        status.info("📝 正在转写一句…")
-                        text = transcribe_pcm16(utt, model_size=asr_model)
-                        if text:
-                            st.session_state.live_transcript.append(text)
-                            _render_transcript()
-                status.info("🎙️ 通话中…（持续聆听）")
-        else:
-            status.caption("未在通话。点击 START 开始。")
+    # 通话中：定时轮询刷新字幕（约 1s）
+    if st.session_state.live_running:
+        status.info("🎙️ 通话中…（持续聆听）")
+        _time.sleep(1.0)
+        st.rerun()
+    elif rec is not None:
+        status.caption("已结束。可「开始通话」继续，或「清空字幕」。")
