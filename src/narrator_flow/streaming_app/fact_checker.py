@@ -41,14 +41,13 @@ _FINALIZE_SYSTEM = (
     "- 明确与权威资料冲突的失实内容：从 notes 中删除，并在 changelog 写明删除原因。\n"
     "- 过于浅显的：在原文基础上适当补充一句更具体的背景，不要删除。\n"
     "- 不要新增任何无证据支撑的“事实”。\n"
-    "只输出 JSON，字段：era_estimate(string)、confidence(0-1 的数字)、"
+    "只输出 JSON，字段：era_estimate(string，不确定性写进措辞、不要数字置信度)、"
     "notes(字符串数组)、changelog(字符串数组，记录本次的删除/修正/标注)。"
 )
 
 
 class FactCheckResult(BaseModel):
     era_estimate: Optional[str] = None
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     notes: List[str] = Field(default_factory=list)
     changelog: List[str] = Field(default_factory=list)
 
@@ -109,6 +108,5 @@ class FactChecker:
 
         return BackgroundKnowledgeState(
             era_estimate=result.era_estimate or background.era_estimate,
-            confidence=result.confidence or background.confidence,
             notes=result.notes,
         )

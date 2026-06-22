@@ -23,13 +23,14 @@ _bg_notes = []
 _background_at = {}  # chunk_index -> background slice
 
 
-def bg(idx, era, conf, *new_notes):
+def bg(idx, era, _conf, *new_notes):
+    # 第 2 个参数（旧的数字置信度）已弃用：不确定性改由 era 文本的措辞表达。
+    # 保留形参只是为了不动下面 8 处调用；输出里不再写 confidence。
     for n in new_notes:
         if n not in _bg_notes:
             _bg_notes.append(n)
     _background_at[idx] = {
         "era_estimate": era,
-        "confidence": conf,
         "notes": list(_bg_notes),
     }
 

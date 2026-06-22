@@ -59,8 +59,7 @@ class NarratorSession:
             f"\n=== Chunk {chunk.index + 1}/{total} ===\n"
             f"[逻辑大纲] 更新方式: {o.last_update_mode or 'incremental'} "
             f"| 当前事件数: {len(o.events)} | 待澄清: {len(o.open_threads)}\n"
-            f"[背景知识] 年代估计: {b.era_estimate or '未知'} (置信度 {b.confidence:.2f}) "
-            f"| 笔记条数: {len(b.notes)}\n"
+            f"[背景知识] 年代估计: {b.era_estimate or '未知'} | 笔记条数: {len(b.notes)}\n"
             f"[锚点物件] 候选: \"{a.candidate_name or '未确定'}\" (提及{a.mention_count}次) "
             f"| 提示词细节分: {a.prompt_detail_score:.2f} | 已生图: {a.image_generated}"
         )

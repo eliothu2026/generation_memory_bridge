@@ -34,7 +34,7 @@ def _make_printer(queue: CoalescingQueue):
               f"队列仍堆积 {queue.pending()}）===")
         print(f"  本段文本: {chunk.text[:60]}{'…' if len(chunk.text) > 60 else ''}")
         print(f"  [逻辑] 方式={o.last_update_mode} 事件={len(o.events)} 待澄清={len(o.open_threads)}")
-        print(f"  [背景] 年代={b.era_estimate or '未知'}({b.confidence:.2f}) 笔记={len(b.notes)}")
+        print(f"  [背景] 年代={b.era_estimate or '未知'} 笔记={len(b.notes)}")
         print(f"  [锚点] {a.candidate_name or '未确定'} 提及{a.mention_count} "
               f"细节分{a.prompt_detail_score:.2f} 已生图={a.image_generated}")
     return on_update

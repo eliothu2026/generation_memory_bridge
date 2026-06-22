@@ -58,7 +58,7 @@ def render_pipelines(state) -> None:
     with col2:
         st.subheader("📚 流水线B：背景知识")
         bg = state.background
-        st.caption(f"年代估计：{bg.era_estimate or '未知'}（置信度 {bg.confidence:.2f}）")
+        st.caption(f"年代估计：{bg.era_estimate or '未知'}")
         for n in bg.notes:
             st.markdown(f"- {n}")
         with st.expander("原始 JSON"):

@@ -44,8 +44,10 @@ class LogicOutlineState(BaseModel):
 class BackgroundKnowledgeState(BaseModel):
     """流水线B：时代/社会背景知识状态（纯增量）。"""
 
-    era_estimate: Optional[str] = Field(default=None, description="对年代/地域背景的估计")
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="对年代估计的置信度")
+    era_estimate: Optional[str] = Field(
+        default=None,
+        description="对年代/地域背景的估计；不确定性直接用措辞表达（如“约”“推测”“…前后”）",
+    )
     notes: List[str] = Field(default_factory=list, description="背景知识笔记列表，只增不减")
 
 

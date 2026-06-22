@@ -73,14 +73,13 @@ class LLMPipelines:
     async def background(self, state: NarratorFlowState, chunk: TranscriptChunk) -> None:
         user = (
             f"已有的背景知识笔记列表：\n{state.background.notes}\n\n"
-            f"当前对年代/地域/社会背景的估计：{state.background.era_estimate or '未知'}"
-            f"（置信度 {state.background.confidence}）\n\n"
+            f"当前对年代/地域/社会背景的估计：{state.background.era_estimate or '未知'}\n\n"
             f"新增的一段讲述内容（第 {chunk.index} 段）：\n\"{chunk.text}\"\n\n"
-            "请：1) 若有可推断年代/地域/社会背景的线索，更新 era_estimate 为更具体的描述并"
-            "调整 confidence(0-1)，与旧判断冲突时保留有用旧信息并注明“修正”；"
+            "请：1) 若有可推断年代/地域/社会背景的线索，更新 era_estimate 为更具体的描述；"
+            "**不要给出数字置信度**，把把握程度直接写进措辞里（如“约”“推测”“可能在…前后”），"
+            "与旧判断冲突时保留有用旧信息并注明“修正”；"
             "2) 为新发现的背景概念在 notes 末尾追加条目（简明解释一个时代背景概念），"
-            "绝不删除或覆盖已有条目；3) 若本段无新增背景信息，原样返回当前 notes/"
-            "era_estimate/confidence。"
+            "绝不删除或覆盖已有条目；3) 若本段无新增背景信息，原样返回当前 notes 与 era_estimate。"
         )
         new_state: BackgroundKnowledgeState = await asyncio.to_thread(
             llm_client.structured,
