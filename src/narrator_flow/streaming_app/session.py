@@ -17,7 +17,7 @@ from typing import Optional
 
 from narrator_flow.state import NarratorFlowState, TranscriptChunk
 
-from .analyzer import Analyzer, CrewPipelines, Pipelines
+from .analyzer import Analyzer, LLMPipelines, Pipelines
 
 
 class NarratorSession:
@@ -28,8 +28,8 @@ class NarratorSession:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.state = NarratorFlowState()
-        # 默认走真实 LLM（CrewPipelines）；传入 pipelines 可换成回放等其他实现
-        self.analyzer = Analyzer(pipelines or CrewPipelines(self.output_dir))
+        # 默认走真实 LLM（LLMPipelines）；传入 pipelines 可换成回放等其他实现
+        self.analyzer = Analyzer(pipelines or LLMPipelines(self.output_dir))
 
     @classmethod
     def demo(cls, output_dir: str | Path = "output_demo",

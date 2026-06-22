@@ -1,45 +1,28 @@
-"""Pluggable image-generation tool.
+"""生图工具（STUB，无框架依赖）。
 
-This is a STUB implementation. The actual image generation backend
-(DALL-E / GPT-Image / Stable Diffusion / etc.) is TBD. The interface is
-designed so that swapping in a real backend only requires rewriting the
-body of `_run` -- callers (the Flow) don't need to change.
+当前为占位实现：真实生图后端（DALL·E / GPT-Image / Stable Diffusion 等）待定。
+接口设计成"换后端只需改 run() 内部"，调用方（流水线）无需改动。
+
+历史说明：早期曾继承 crewai.tools.BaseTool，但实际是被流水线直接 .run() 调用、
+并非由 agent 自主调用，所以方案3 去 CrewAI 时改回了无依赖的普通类。
 """
 
 from pathlib import Path
 
-from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
 
+class ImageGenerationTool:
+    """从英文提示词生成图像并保存到 output_path。当前为 STUB（写占位文件）。
 
-class ImageGenInput(BaseModel):
-    prompt: str = Field(..., description="English image-generation prompt")
-    output_path: str = Field(..., description="Where to save the generated image")
-
-
-class ImageGenerationTool(BaseTool):
-    """Generates an image from a text prompt.
-
-    TODO: replace the stub `_run` body with a real call to an image
-    generation API, e.g.:
-
+    TODO: 把 run() 内部替换为真实生图 API，例如：
         from openai import OpenAI
         client = OpenAI()
         result = client.images.generate(model="dall-e-3", prompt=prompt, ...)
-        # download/save result to output_path
-
-    or a Stable Diffusion pipeline / other provider.
+        # 下载并保存到 output_path
     """
 
-    name: str = "generate_anchor_image"
-    description: str = (
-        "Generates an image from an English text prompt describing a "
-        "narrative anchor object, and saves it to output_path. "
-        "Currently a STUB -- the real image-generation backend is TBD."
-    )
-    args_schema: type[BaseModel] = ImageGenInput
+    name = "generate_anchor_image"
 
-    def _run(self, prompt: str, output_path: str) -> str:
+    def run(self, prompt: str, output_path: str) -> str:
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(

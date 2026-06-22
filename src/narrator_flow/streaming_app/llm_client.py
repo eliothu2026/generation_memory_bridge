@@ -111,8 +111,18 @@ def structured(
     temperature: float = 0.2,
     client: Any = None,
 ) -> Optional[BaseModel]:
-    """JSON 模式 + Pydantic 解析，返回结构化对象（失败返回 None）。"""
+    """JSON 模式 + Pydantic 解析，返回结构化对象（失败返回 None）。
+
+    自动把目标模型的 JSON Schema 注入对话，替代 CrewAI 的 output_pydantic 约束：
+    让模型按 schema 输出 JSON，再用 Pydantic 解析校验。
+    """
     client = client or get_client()
+    schema_json = json.dumps(schema.model_json_schema(), ensure_ascii=False)
+    messages = list(messages) + [{
+        "role": "system",
+        "content": ("只输出一个 JSON 对象，严格符合下面的 JSON Schema；"
+                    "不要输出任何多余文字，也不要用 markdown 代码块包裹：\n" + schema_json),
+    }]
     resp = client.chat.completions.create(
         model=model, messages=messages,
         response_format={"type": "json_object"}, temperature=temperature,

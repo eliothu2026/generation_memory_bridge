@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 
 from narrator_flow.state import NarratorFlowState, TranscriptChunk
 
-from .analyzer import Analyzer, CrewPipelines
+from .analyzer import Analyzer, LLMPipelines
 from .coalescing_queue import CoalescedBatch, CoalescingQueue
 from .producer import simulated_asr
 from .session_store import InMemorySessionStore, SqliteSessionStore
@@ -56,7 +56,7 @@ async def main_async(args: argparse.Namespace) -> None:
         print("[免 key 演示] 回放预录结果，不调用 DeepSeek。")
         pipelines = ReplayPipelines(output_dir=Path(args.output_dir), think_delay=0.2)
     else:
-        pipelines = CrewPipelines(output_dir=Path(args.output_dir))
+        pipelines = LLMPipelines(output_dir=Path(args.output_dir))
     analyzer = Analyzer(pipelines)
     worker = SessionWorker(
         session_id=args.session_id,
