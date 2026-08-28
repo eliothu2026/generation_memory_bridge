@@ -120,6 +120,33 @@ python -m narrator_flow.streaming_app.run_stream --audio 你的录音.wav --asr-
 
 ---
 
+## 🖥️ Web 演示前端（Gemini 风格）
+
+面向**产品演示**的正式前端（React + Vite + TypeScript + Tailwind），区别于下方偏工程的 Streamlit 调试界面：
+左侧 sessions 卡片、中间祖孙双人对话（老人转写在左、孙辈发言在右）、右侧可收起的实时时间线；
+**史实补充与交互提醒逐段挂在对应的老人气泡下**（并明确标注「AI 背景补充，非老人原话」）。
+
+**离线演示模式（默认，0 后端依赖、免 key）：**
+
+```bash
+python scripts/gen_demo_script.py     # (可选)由 transcript+replay 合成 demo 数据,仓库已内置一份
+cd frontend
+npm install
+npm run dev                           # 浏览器打开 http://localhost:5173
+```
+
+逐段点「老人继续讲 ▶」即可看到右侧时间线与气泡下的补充**实时填充**；输入框可自由扮演孙辈发言，
+点交互提醒可一键填入。数据全部本地回放，无需 API key、无需启动后端。
+
+> 🇨🇳 **国内 `npm install` 卡住?** 默认 npm registry 可能连不上，加国内镜像即可（只需一次）：
+> ```bash
+> npm install --registry=https://registry.npmmirror.com
+> ```
+
+> 「实时（后端）」模式（FastAPI + WebSocket，接真实分析引擎）对应路线图「🌐 服务化」，为 Phase 2。
+
+---
+
 ## 在线调试界面（Streamlit）
 
 最直观的体验方式——一个能实时看到三件事如何被填充的网页：
