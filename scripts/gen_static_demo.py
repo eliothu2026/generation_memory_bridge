@@ -1,6 +1,6 @@
-"""把 demo 数据内联进静态模板,生成 0 依赖、可双击打开的 demo.html。
+"""把 demo 数据内联进静态模板,生成 0 依赖、可双击打开的 静态demo_快速体验.html。
 
-产物 demo.html 完全自包含:数据内联(不 fetch)、无 CDN、无构建、无后端——
+产物 静态demo_快速体验.html 完全自包含:数据内联(不 fetch)、无 CDN、无构建、无后端——
 镜像完整前端的"离线大槐树"流程,给人在装完整项目前先快速感受交互。
 
 依赖 frontend/public/demo_script.json(由 scripts/gen_demo_script.py 生成)。
@@ -15,7 +15,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = REPO_ROOT / "scripts" / "demo.template.html"
 DEMO_JSON = REPO_ROOT / "frontend" / "public" / "demo_script.json"
-OUT = REPO_ROOT / "demo.html"
+OUT = REPO_ROOT / "静态demo_快速体验.html"
 PLACEHOLDER = "__DEMO_DATA__"
 
 
