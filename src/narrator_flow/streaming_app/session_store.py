@@ -104,3 +104,14 @@ class SqliteSessionStore(SessionStore):
                 "  state_json = excluded.state_json, updated_at = excluded.updated_at",
                 (session_id, payload, ts),
             )
+
+    async def list_sessions(self) -> list[dict]:
+        """列出所有已持久化会话(按更新时间倒序),供服务化的"会话列表"使用。"""
+        return await asyncio.to_thread(self._list_sessions_sync)
+
+    def _list_sessions_sync(self) -> list[dict]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT session_id, updated_at FROM sessions ORDER BY updated_at DESC"
+            ).fetchall()
+        return [{"session_id": r[0], "updated_at": r[1]} for r in rows]

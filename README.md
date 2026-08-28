@@ -10,6 +10,12 @@
 📄 **想了解产品思路**（用户、竞品、AI 风险、成功指标、关键决策）？
 见 **[产品简报 docs/product-brief.md](./docs/product-brief.md)**。
 
+> ### 🚀 30 秒先睹为快(无需安装)
+> 在跑完整项目之前,想先感受一下使用流程?**直接用浏览器打开仓库根目录的
+> [`demo.html`](./demo.html)** 即可——纯静态、**0 依赖**(数据内联,无需 npm / 后端 / 网络),
+> 与真实前端**同款设计与交互**:逐段点「老人继续讲」,看右侧时间线实时生长、老人气泡下自动
+> 挂出「AI 背景补充」与「追问建议」,还能扮演孙辈发言。觉得对味,再按下方「快速开始」上手完整版。
+
 ---
 
 ## 为什么做这个
@@ -117,6 +123,41 @@ python -m narrator_flow.streaming_app.run_stream --audio 你的录音.wav --asr-
 > 注意：语音识别（faster-whisper，本地、免 key）与后续分析（DeepSeek，需 key）是
 > 两件事——音频转文字这步不花钱，但把文字喂进三条流水线分析仍需配置 key。
 > 在 Streamlit 的「🎙️ 音频上传」模式里，可以先看到 ASR 转写全文，再逐段触发分析。
+
+---
+
+## 🖥️ Web 演示前端（Gemini 风格 · 会话优先）
+
+面向**产品演示**的正式前端（React + Vite + TypeScript + Tailwind），区别于下方偏工程的 Streamlit 调试界面。
+布局:左侧**真实会话列表**（新建 / 切换 / 删除，持久化于后端 SQLite）、中间祖孙双人对话（老人转写在左、
+孙辈发言在右）、右侧可收起的实时时间线；**史实补充与交互提醒逐段挂在对应的老人气泡下**
+（明确标注「AI 背景补充，非老人原话」）。
+
+> 💡 只想快速感受交互?不必装下面这些——直接打开根目录 [`demo.html`](./demo.html)(0 依赖静态版)。
+
+**离线示例(默认、0 后端、免 key):** 侧栏置顶的「大槐树的故事」是本地回放,逐段点「老人继续讲 ▶」
+即可看到右侧时间线与气泡下补充**实时填充**、点追问建议一键填入、扮演孙辈发言。
+
+```bash
+python scripts/gen_demo_script.py            # (可选)重生成 demo 数据,仓库已内置一份
+cd frontend && npm install && npm run dev    # 浏览器打开 http://127.0.0.1:5173
+```
+
+> 🇨🇳 国内 `npm install` 卡住?加镜像(只需一次):`npm install --registry=https://registry.npmmirror.com`
+
+**实时会话(接真实分析、持久化):** 点侧栏「新建会话」开一条真实会话,连 FastAPI + WebSocket、用真实
+DeepSeek 分析,结果存 SQLite(刷新页面 / 重启后端仍在)。一条会话里可随时切**输入方式**:💬 文字(以老人 / 孙辈
+身份)、🎙️ 录音上传、🎤 实时麦克风——音频经 faster-whisper 转写后走**背压合并队列 + worker** 分析。
+
+```bash
+export DEEPSEEK_API_KEY=sk-...               # 或在界面右上角 ⚙️ 热配置(后端可不带 key 冷启动)
+pip install -e ".[web,asr]"                  # web=服务化;asr=音频转写(faster-whisper)
+uvicorn narrator_flow.server.app:app         # 默认 http://127.0.0.1:8000,前端经 Vite 代理连它
+```
+
+> ⚙️ **热配置**:右上角「配置」可直接填 / 改模型 API Key 与 Base URL(仅存后端进程内存、不落盘),保存后
+> 自动重连——因此后端可**不带 key 冷启动**,界面里配好即用。
+> 🎤 麦克风(getUserMedia)需"安全上下文":请用 `http://127.0.0.1:5173` 或 `localhost` 打开,勿用局域网 IP。
 
 ---
 
