@@ -12,7 +12,7 @@
 
 > ### 🚀 30 秒先睹为快(无需安装)
 > 在跑完整项目之前,想先感受一下使用流程?**直接用浏览器打开仓库根目录的
-> [`demo.html`](./demo.html)** 即可——纯静态、**0 依赖**(数据内联,无需 npm / 后端 / 网络),
+> [`静态demo_快速体验.html`](./静态demo_快速体验.html)** 即可——纯静态、**0 依赖**(数据内联,无需 npm / 后端 / 网络),
 > 与真实前端**同款设计与交互**:逐段点「老人继续讲」,看右侧时间线实时生长、老人气泡下自动
 > 挂出「AI 背景补充」与「追问建议」,还能扮演孙辈发言。觉得对味,再按下方「快速开始」上手完整版。
 
@@ -133,7 +133,7 @@ python -m narrator_flow.streaming_app.run_stream --audio 你的录音.wav --asr-
 孙辈发言在右）、右侧可收起的实时时间线；**史实补充与交互提醒逐段挂在对应的老人气泡下**
 （明确标注「AI 背景补充，非老人原话」）。
 
-> 💡 只想快速感受交互?不必装下面这些——直接打开根目录 [`demo.html`](./demo.html)(0 依赖静态版)。
+> 💡 只想快速感受交互?不必装下面这些——直接打开根目录 [`静态demo_快速体验.html`](./静态demo_快速体验.html)(0 依赖静态版)。
 
 **离线示例(默认、0 后端、免 key):** 侧栏置顶的「大槐树的故事」是本地回放,逐段点「老人继续讲 ▶」
 即可看到右侧时间线与气泡下补充**实时填充**、点追问建议一键填入、扮演孙辈发言。
@@ -286,12 +286,12 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
 - **🧠 防止上下文膨胀**：把"周期性全量重跑/摘要合并"抽成后台任务，并引入摘要/向量
   检索，避免讲述越长、prompt 越大、越慢越贵
 - ✅ **接入真实 ASR**（已完成）：本地 faster-whisper，支持音频文件（`--audio`）与
-  Streamlit 音频上传；离线、免 key。下一步可扩展为实时麦克风流
+  Streamlit / Web 音频上传;离线、免 key。已进一步扩展为 Web 端实时麦克风流
 - ✅ **建议追问（第 4 条流水线）**（已完成 v1）：长辈说完一段后替年轻人想 1–2 个具体
   追问，增强互动、补全细节；自我克制（无值得问的则返回空，不打扰）。当前仅"细节追问型"，
   情感共情型与"音频情绪感知"留待后续
-- **📞 实时通话**（进行中）：阶段1（连续麦 → VAD 切句 → 实时字幕）已落地，需本机联调；
-  阶段2 把转写逐句接入分析（背压尾随）、阶段3 加"长辈正在说"开关 + 调参
+- ✅ **实时语音输入 · Web 端已落地**：Web 会话内 🎙️ 录音上传 / 🎤 实时麦克风 → faster-whisper
+  转写 → 背压合并队列 → 真实分析(阶段1 切句 + 阶段2 分析接入已通);阶段3 说话人分离见下条
 - **🎙️ 说话人分离（speaker diarization）**：当前 ASR（Whisper）只产出**一条不分人的
   文字流**，分不清"长辈叙述"与"年轻人提问"——这在双人对话+追问场景下会污染分析。
   需引入 whisperx/pyannote（受 HF 访问限制），或在产品上把两人输入分通道处理
@@ -301,7 +301,9 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
   `crews/` 与 `llm_compat.py`，依赖从 `crewai[tools]`（30 依赖、~1GB）瘦身为
   `openai + httpx`。整个项目不再依赖任何 agent 框架
 - **🎨 接入真实生图模型**（DALL·E / Stable Diffusion 等），替换当前的 stub
-- **🌐 服务化**：FastAPI + WebSocket，让长辈能从手机/网页远程连入（async 骨架已就绪）
+- ✅ **服务化 + Web 前端**（已完成）：FastAPI + WebSocket 后端 + 会话优先的 React 前端
+  （多会话持久化于 SQLite、⚙️ 模型 key 热配置、会话内切换 文字 / 录音 / 麦克风 输入）;
+  另含 0 依赖静态演示 `静态demo_快速体验.html`(双击即开)
 
 ---
 
@@ -311,30 +313,33 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
 <summary><b>项目结构</b></summary>
 
 ```
-src/narrator_flow/
-├── main.py          # CLI 入口（逐段播放 demo，底层用 NarratorSession）
-├── app.py           # Streamlit 调试界面（底层用 NarratorSession）
-├── state.py         # Pydantic 状态模型
-├── streaming.py     # 模拟流式输入（逐段读取 transcript）
-├── tools/
-│   └── image_gen_tool.py   # 生图工具 stub（待接入真实模型）
-└── streaming_app/          # 流式运行时（async 事件循环 + 背压，不依赖任何 agent 框架）
-    ├── analyzer.py         # 单段分析：gather 并发四条流水线（直连 DeepSeek + Pydantic）
-    ├── session.py          # NarratorSession：同步逐段分析封装（CLI/GUI 用）
-    ├── replay.py           # 免 key 演示：回放预录结果，不调用 LLM
-    ├── coalescing_queue.py # 合并队列（背压核心）
-    ├── session_store.py    # 会话存储：内存 / SQLite（可断点续接）
-    ├── worker.py           # 单会话消费循环
-    ├── producer.py         # 模拟 ASR 流式输入（文本，免依赖）
-    ├── asr.py              # 真实 ASR：本地 faster-whisper（音频→文字片段）
-    ├── llm_client.py       # 框架无关的 LLM 客户端（工具循环 + 结构化输出）
-    ├── wikipedia_tool.py   # 维基百科检索工具（考据 agent 用，免 key）
-    ├── fact_checker.py     # 考据 agent：手写工具循环，核验背景史实
-    └── run_stream.py       # 流式运行时 CLI 入口
+generation_memory_bridge/
+├── src/narrator_flow/
+│   ├── main.py · app.py · state.py · streaming.py     # CLI / Streamlit / 状态模型 / 模拟流
+│   ├── tools/image_gen_tool.py                         # 生图 stub(待接入真实模型)
+│   ├── streaming_app/                                  # 流式运行时(async + 背压,无 agent 框架)
+│   │   ├── analyzer.py         # 四条流水线并发(直连 DeepSeek + Pydantic)
+│   │   ├── session.py          # NarratorSession(CLI/GUI 同步封装)
+│   │   ├── replay.py           # 免 key 回放(不调 LLM)
+│   │   ├── coalescing_queue.py · worker.py · producer.py  # 合并队列(背压)/ 消费 / 模拟 ASR
+│   │   ├── asr.py              # 真实 ASR:faster-whisper(音频→文字)
+│   │   ├── llm_client.py · wikipedia_tool.py · fact_checker.py  # LLM 客户端 / 维基 / 考据 agent
+│   │   ├── session_store.py    # 会话状态存储(内存 / SQLite)
+│   │   └── run_stream.py       # 流式运行时 CLI
+│   └── server/                                         # 🌐 服务化:FastAPI + WebSocket
+│       ├── app.py              # 多会话 REST + 统一会话 WS(文字/音频 → 背压 → 分析)
+│       └── store.py            # WebSessionStore:会话持久化(SQLite)
+├── frontend/                                           # 会话优先 Web 前端(React + Vite + TS + Tailwind)
+├── scripts/
+│   ├── gen_demo_script.py      # 合成离线 demo 数据(transcript + replay → demo_script.json)
+│   └── gen_static_demo.py      # 生成 0 依赖静态演示 → 静态demo_快速体验.html
+├── tests/                      # 免 key 单元测试(pytest);.github/workflows/ CI
+├── 静态demo_快速体验.html       # 0 依赖静态演示(双击即开)
+└── data/  ·  docs/  ·  .env.example  ·  README.md
 ```
 
-CLI、GUI、流式服务三个入口**共用同一份** `analyzer.py` 的分析逻辑：交互式场景
-（CLI/GUI）经 `NarratorSession` 同步调用，真实流式经 `worker` + 合并队列异步调用。
+CLI、Streamlit、流式 CLI、Web 服务多个入口**共用同一份** `analyzer.py` 的分析逻辑：交互式场景
+（CLI / GUI）经 `NarratorSession` 同步调用，真实流式与 Web 会话经 `worker` + 合并队列异步调用。
 </details>
 
 <details>
