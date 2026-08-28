@@ -15,6 +15,14 @@ export function useSession(mode: Mode) {
 
   useEffect(() => {
     let cancelled = false
+    // 音频模式由 AudioMode 组件自行管理(上传 + WS 流式),此处不建 provider
+    if (mode === 'audio') {
+      providerRef.current = null
+      setSnap(null)
+      setError(null)
+      setLoading(false)
+      return
+    }
     const provider: SessionProvider =
       mode === 'backend' ? new BackendProvider() : new OfflineProvider()
     providerRef.current = provider

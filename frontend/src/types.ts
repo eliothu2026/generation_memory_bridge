@@ -52,4 +52,6 @@ export interface ChatMessage {
   text: string
   backgroundNotes?: BackgroundNote[]
   followUps?: string[]
+  /** 音频模式:该段由几个 ASR 片段经背压合并而来(可观测背压)。 */
+  coalescedFrom?: number
 }

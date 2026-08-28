@@ -47,6 +47,14 @@ def test_real_session_without_key_returns_400(monkeypatch):
         assert r.status_code == 400
 
 
+def test_audio_upload_without_key_returns_400(monkeypatch):
+    """音频分析同样需要 key;缺 key 时上传应 400(转写免 key,但后续分析需要)。"""
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    with TestClient(app) as client:
+        r = client.post("/api/audio", files={"file": ("t.wav", b"RIFFxxxx", "audio/wav")})
+        assert r.status_code == 400
+
+
 def test_ws_advance_scripted_and_grandchild():
     with TestClient(app) as client:
         sid = client.post("/api/sessions", json={"mode": "demo"}).json()["id"]

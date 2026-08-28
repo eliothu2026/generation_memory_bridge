@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Mode } from './api/provider'
+import AudioMode from './components/Audio/AudioMode'
 import ChatArea from './components/Chat/ChatArea'
 import Sidebar from './components/Sidebar/Sidebar'
 import TimelinePanel from './components/Timeline/TimelinePanel'
@@ -12,7 +13,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [timelineCollapsed, setTimelineCollapsed] = useState(false)
 
-  const title = snap?.meta.title || '代际记忆桥梁'
+  const title = mode === 'audio' ? '录音口述 · 实时分析' : snap?.meta.title || '代际记忆桥梁'
   const elderName = snap?.meta.elder_name ?? '老人'
 
   return (
@@ -33,7 +34,9 @@ export default function App() {
           onModeChange={setMode}
         />
 
-        {loading ? (
+        {mode === 'audio' ? (
+          <AudioMode />
+        ) : loading ? (
           <div className="flex flex-1 items-center justify-center text-subtle">
             {mode === 'backend' ? '连接后端中…' : '加载中…'}
           </div>

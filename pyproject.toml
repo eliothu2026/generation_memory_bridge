@@ -30,9 +30,11 @@ test = [
     "pytest>=7.0",
 ]
 # Web 服务(FastAPI + WebSocket 服务化)。安装:pip install -e ".[web]"
+# 注:音频上传→ASR 入口还需 [asr](faster-whisper),即 pip install -e ".[web,asr]"
 web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
+    "python-multipart>=0.0.9",
 ]
 
 [project.scripts]

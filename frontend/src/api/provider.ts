@@ -10,7 +10,7 @@ export interface SessionSnapshot {
   totalSegments: number
 }
 
-export type Mode = 'offline' | 'backend'
+export type Mode = 'offline' | 'backend' | 'audio'
 
 /**
  * 数据源抽象:离线(读打包脚本)与后端(FastAPI/WebSocket)共用同一接口。

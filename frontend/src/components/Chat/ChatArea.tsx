@@ -11,9 +11,10 @@ interface Props {
   onNext: () => Promise<void> | void
   onSend: (text: string) => Promise<void> | void
   onSubmitElder?: (text: string) => Promise<void> | void
+  readOnly?: boolean
 }
 
-export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubmitElder }: Props) {
+export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubmitElder, readOnly }: Props) {
   const [input, setInput] = useState('')
   const [speaker, setSpeaker] = useState<'elder' | 'grandchild'>('elder')
   const [busy, setBusy] = useState(false)
@@ -60,11 +61,13 @@ export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubm
               <div className="text-5xl">🌳</div>
               <p className="mt-4 text-lg font-medium text-ink">{snap.meta.title}</p>
               {snap.meta.subtitle && <p className="mt-1 text-sm">{snap.meta.subtitle}</p>}
-              <p className="mt-6 text-sm">
-                {backend
-                  ? '以「老人」身份输入一段口述,AI 会用真实模型实时整理(每段约 1–2 分钟)。'
-                  : '点击下方「老人继续讲 ▶」,开始逐段聆听与整理。'}
-              </p>
+              {!readOnly && (
+                <p className="mt-6 text-sm">
+                  {backend
+                    ? '以「老人」身份输入一段口述,AI 会用真实模型实时整理(每段约 1–2 分钟)。'
+                    : '点击下方「老人继续讲 ▶」,开始逐段聆听与整理。'}
+                </p>
+              )}
             </div>
           )}
 
@@ -76,7 +79,8 @@ export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubm
                 elderName={elderName}
                 backgroundNotes={m.backgroundNotes}
                 followUps={m.followUps}
-                onPickFollowUp={setInput}
+                coalescedFrom={m.coalescedFrom}
+                onPickFollowUp={readOnly ? () => {} : setInput}
               />
             ) : (
               <GrandchildBubble key={m.id} text={m.text} />
@@ -94,17 +98,19 @@ export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubm
         </div>
       </div>
 
-      <Composer
-        value={input}
-        onChange={setInput}
-        onSend={doSend}
-        onNext={doNext}
-        canAdvance={canAdvance}
-        busy={busy}
-        mode={mode}
-        speaker={speaker}
-        onSpeakerChange={setSpeaker}
-      />
+      {!readOnly && (
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSend={doSend}
+          onNext={doNext}
+          canAdvance={canAdvance}
+          busy={busy}
+          mode={mode}
+          speaker={speaker}
+          onSpeakerChange={setSpeaker}
+        />
+      )}
     </div>
   )
 }
