@@ -1,7 +1,7 @@
 [project]
 name = "narrator-flow"
 version = "0.1.0"
-description = "口述史实时分析 Agent (CrewAI Flows demo)"
+description = "口述史实时分析（流式 + 背压 + 并发，直连 DeepSeek，无 agent 框架）"
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "openai>=1.0",
@@ -25,6 +25,10 @@ live = [
     "webrtcvad>=2.0",
     "faster-whisper>=1.0",
 ]
+# 测试依赖：纯逻辑、免 key 的单元测试（pytest）。安装：pip install -e ".[test]"
+test = [
+    "pytest>=7.0",
+]
 
 [project.scripts]
 narrator_flow = "narrator_flow.main:run"
@@ -35,3 +39,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
