@@ -49,6 +49,7 @@ pnpm-debug.log*
 .next/
 .nuxt/
 .output/
+.vite/
 dist/
 out/
 
