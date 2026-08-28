@@ -8,7 +8,7 @@ import { useSession } from './hooks/useSession'
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('offline')
-  const { snap, loading, error, next, send, reset } = useSession(mode)
+  const { snap, loading, error, next, send, submitElder, reset } = useSession(mode)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [timelineCollapsed, setTimelineCollapsed] = useState(false)
 
@@ -34,19 +34,28 @@ export default function App() {
         />
 
         {loading ? (
-          <div className="flex flex-1 items-center justify-center text-subtle">加载中…</div>
+          <div className="flex flex-1 items-center justify-center text-subtle">
+            {mode === 'backend' ? '连接后端中…' : '加载中…'}
+          </div>
         ) : error ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <div className="text-sm text-red-600">连接失败:{error}</div>
             <div className="max-w-md text-xs leading-relaxed text-subtle">
               {mode === 'backend'
-                ? '「实时(后端)」需要先启动后端:pip install -e ".[web]" 后 uvicorn narrator_flow.server.app:app;或切回上方「离线演示」。'
+                ? '「实时(后端)」需要先启动后端并配置 key:export DEEPSEEK_API_KEY=sk-... 后 uvicorn narrator_flow.server.app:app;或切回上方「离线演示」。'
                 : '请先生成 demo 数据:python scripts/gen_demo_script.py'}
             </div>
           </div>
         ) : snap ? (
           <div className="flex min-h-0 flex-1">
-            <ChatArea snap={snap} elderName={elderName} onNext={next} onSend={send} />
+            <ChatArea
+              snap={snap}
+              elderName={elderName}
+              mode={mode}
+              onNext={next}
+              onSend={send}
+              onSubmitElder={submitElder}
+            />
             <TimelinePanel
               timeline={snap.timeline}
               eraEstimate={snap.eraEstimate}

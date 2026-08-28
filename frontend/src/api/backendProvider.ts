@@ -1,11 +1,12 @@
 import type { SessionProvider, SessionSnapshot } from './provider'
 
 /**
- * 实时(后端)数据源:REST 建会话 + WebSocket 逐段推进。
- * 与 Vite 的 proxy 配合:/api 与 /ws 会被转发到 FastAPI(默认 localhost:8000)。
+ * 实时(后端)数据源:REST 建 **real 会话** + WebSocket。
+ * real 会话 = 自由输入 + 真实 DeepSeek 分析(后端需 DEEPSEEK_API_KEY)。
+ * 与 Vite 的 proxy 配合:/api 与 /ws 转发到 FastAPI(默认 localhost:8000)。
  *
- * 协议:连接后服务端先推一帧初始快照;之后每次发送 {type} 指令,服务端回推一帧快照。
- * 这里用一个 pending 队列把"发送 → 下一帧快照"配成请求/响应。
+ * 协议:连接后服务端先推一帧初始快照;之后每发一条指令,服务端回推一帧快照。
+ * 这里用 pending 队列把"发送 → 下一帧快照"配成请求/响应。
  */
 export class BackendProvider implements SessionProvider {
   private ws: WebSocket | null = null
@@ -16,9 +17,18 @@ export class BackendProvider implements SessionProvider {
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mode: 'demo' }),
+      body: JSON.stringify({ mode: 'real' }),
     })
-    if (!res.ok) throw new Error(`创建会话失败:HTTP ${res.status}(后端是否已启动?)`)
+    if (!res.ok) {
+      let detail = `HTTP ${res.status}`
+      try {
+        const j = await res.json()
+        if (j.detail) detail = j.detail
+      } catch {
+        /* ignore */
+      }
+      throw new Error(`${detail}(实时模式需后端已启动并配置 DEEPSEEK_API_KEY)`)
+    }
     const data = await res.json()
     this.id = data.id
     return await this.openWs()
@@ -64,6 +74,10 @@ export class BackendProvider implements SessionProvider {
 
   nextElderSegment(): Promise<SessionSnapshot> {
     return this.request({ type: 'next_elder' })
+  }
+
+  submitElder(text: string): Promise<SessionSnapshot> {
+    return this.request({ type: 'elder_text', text })
   }
 
   sendGrandchild(text: string): Promise<SessionSnapshot> {

@@ -13,14 +13,16 @@ export interface SessionSnapshot {
 export type Mode = 'offline' | 'backend'
 
 /**
- * 数据源抽象:离线(读打包脚本)与后端(FastAPI/WebSocket)共用同一接口,
- * 顶栏切换模式时只需替换实现。所有方法都是异步的(后端走网络/WS)。
+ * 数据源抽象:离线(读打包脚本)与后端(FastAPI/WebSocket)共用同一接口。
+ * 所有方法都是异步的(后端走网络/WS)。
  */
 export interface SessionProvider {
   /** 初始化(fetch / 建会话 / 连 WS),返回首个快照。 */
   init(): Promise<SessionSnapshot>
-  /** 推进老人的下一段叙述。 */
+  /** 推进老人的下一段叙述(脚本模式)。 */
   nextElderSegment(): Promise<SessionSnapshot>
+  /** 提交一段自由输入的老人叙述(后端 real 会话:真实 DeepSeek 分析)。 */
+  submitElder?(text: string): Promise<SessionSnapshot>
   /** 孙辈自由发言(右侧气泡)。 */
   sendGrandchild(text: string): Promise<SessionSnapshot>
   /** 重置到开头。 */

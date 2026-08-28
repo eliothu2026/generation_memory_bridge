@@ -61,6 +61,16 @@ export function useSession(mode: Mode) {
     }
   }, [])
 
+  const submitElder = useCallback(async (text: string) => {
+    const p = providerRef.current
+    if (!p || !p.submitElder) return
+    try {
+      setSnap(await p.submitElder(text))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }, [])
+
   const reset = useCallback(async () => {
     const p = providerRef.current
     if (!p) return
@@ -71,5 +81,5 @@ export function useSession(mode: Mode) {
     }
   }, [])
 
-  return { snap, loading, error, next, send, reset }
+  return { snap, loading, error, next, send, submitElder, reset }
 }
