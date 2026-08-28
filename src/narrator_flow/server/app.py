@@ -24,12 +24,14 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from dotenv import load_dotenv
 
 from narrator_flow.state import TranscriptChunk
 from narrator_flow.streaming import stream_chunks
 from narrator_flow.streaming_app.session import NarratorSession
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+load_dotenv(REPO_ROOT / ".env")  # 读取项目根 .env(DEEPSEEK_API_KEY 等),与 main.py / app.py 一致
 DEMO_TRANSCRIPT = REPO_ROOT / "data" / "transcripts" / "sample_story.json"
 DEMO_TITLE = "大槐树的故事"
 DEMO_SUBTITLE = "农村长辈回忆 1970–80 年代"
