@@ -1,4 +1,4 @@
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Settings } from 'lucide-react'
 import type { LiveInput, TopMode } from '../api/provider'
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   liveInput: LiveInput
   onTopModeChange: (m: TopMode) => void
   onLiveInputChange: (i: LiveInput) => void
+  onOpenSettings: () => void
 }
 
 export default function TopBar({
@@ -21,6 +22,7 @@ export default function TopBar({
   liveInput,
   onTopModeChange,
   onLiveInputChange,
+  onOpenSettings,
 }: Props) {
   const seg = (active: boolean) =>
     'rounded-full px-3 py-1 transition ' +
@@ -83,6 +85,14 @@ export default function TopBar({
             </button>
           </div>
         )}
+
+        <button
+          onClick={onOpenSettings}
+          className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs text-subtle transition hover:bg-slate-100"
+          title="模型配置(API Key / Base URL)"
+        >
+          <Settings size={15} />
+        </button>
       </div>
     </header>
   )

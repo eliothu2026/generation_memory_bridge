@@ -4,6 +4,7 @@ import SessionCard from './SessionCard'
 interface Props {
   collapsed: boolean
   onToggle: () => void
+  onNewSession: () => void
   sessionTitle: string
   sessionSubtitle?: string
 }
@@ -14,14 +15,14 @@ const PLACEHOLDERS = [
   { title: '奶奶的针线笸箩', subtitle: '演示占位 · 待录入' },
 ]
 
-export default function Sidebar({ collapsed, onToggle, sessionTitle, sessionSubtitle }: Props) {
+export default function Sidebar({ collapsed, onToggle, onNewSession, sessionTitle, sessionSubtitle }: Props) {
   if (collapsed) {
     return (
       <div className="flex w-16 flex-none flex-col items-center gap-4 bg-sidebar py-4">
         <button onClick={onToggle} className="rounded-full p-2 text-subtle hover:bg-black/5" title="展开侧栏">
           <Menu size={20} />
         </button>
-        <button className="rounded-full bg-white p-2.5 text-accent shadow-soft" title="新对话">
+        <button onClick={onNewSession} className="rounded-full bg-white p-2.5 text-accent shadow-soft" title="新建会话">
           <Plus size={18} />
         </button>
         <div className="rounded-full bg-white/70 p-2 text-accent" title={sessionTitle}>
@@ -40,8 +41,11 @@ export default function Sidebar({ collapsed, onToggle, sessionTitle, sessionSubt
       </div>
 
       <div className="px-3">
-        <button className="flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-ink shadow-soft transition hover:shadow-panel">
-          <Plus size={18} className="text-accent" /> 新对话
+        <button
+          onClick={onNewSession}
+          className="flex w-full items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-ink shadow-soft transition hover:shadow-panel"
+        >
+          <Plus size={18} className="text-accent" /> 新建会话
         </button>
       </div>
 

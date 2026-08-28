@@ -63,6 +63,23 @@ def test_mic_session_without_key_returns_400(monkeypatch):
         assert r.status_code == 400
 
 
+def test_config_set_reports_configured(monkeypatch):
+    """从前端热配置 key:POST 后 GET 应报 configured=True(不回传 key 明文)。"""
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    with TestClient(app) as client:
+        assert client.get("/api/config").json()["configured"] is False
+        r = client.post("/api/config", json={"api_key": "sk-test", "base_url": "https://example.com"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["configured"] is True and body["base_url"] == "https://example.com"
+        assert "sk-test" not in str(body)  # 绝不回传明文 key
+        assert client.get("/api/config").json()["configured"] is True
+    # 清理:避免热配置泄漏到后续用例
+    import os as _os
+    _os.environ.pop("DEEPSEEK_API_KEY", None)
+    _os.environ.pop("DEEPSEEK_BASE_URL", None)
+
+
 def test_ws_advance_scripted_and_grandchild():
     with TestClient(app) as client:
         sid = client.post("/api/sessions", json={"mode": "demo"}).json()["id"]

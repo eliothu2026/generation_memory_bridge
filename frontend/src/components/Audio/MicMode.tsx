@@ -12,7 +12,7 @@ const SEGMENT_MS = 4000 // 每 ~4 秒切一段完整录音发给后端
  *
  * MediaRecorder 的 timeslice 分片不可独立解码,故用「录一段→stop→拿完整 blob→再录下一段」。
  */
-export default function MicMode() {
+export default function MicMode({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [snap, setSnap] = useState<SessionSnapshot | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [status, setStatus] = useState('')
@@ -129,6 +129,11 @@ export default function MicMode() {
           <button onClick={start} className="mt-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white">
             开始聆听
           </button>
+          {onOpenSettings && (
+            <button onClick={onOpenSettings} className="text-xs text-subtle underline-offset-2 hover:underline">
+              ⚙️ 配置 API Key
+            </button>
+          )}
         </div>
       </div>
     )

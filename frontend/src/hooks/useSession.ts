@@ -4,10 +4,10 @@ import { OfflineProvider } from '../api/offlineProvider'
 import type { Mode, SessionProvider, SessionSnapshot } from '../api/provider'
 
 /**
- * 按当前模式驱动一个 SessionProvider。切换模式时会销毁旧 provider(关 WS)、
- * 用新实现重新 init。所有动作方法都是异步的。
+ * 按当前模式驱动一个 SessionProvider。切换模式或 nonce 变化(新建会话 / 配置 key 后)
+ * 会销毁旧 provider(关 WS)、用新实现重新 init。所有动作方法都是异步的。
  */
-export function useSession(mode: Mode) {
+export function useSession(mode: Mode, nonce = 0) {
   const providerRef = useRef<SessionProvider | null>(null)
   const [snap, setSnap] = useState<SessionSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
@@ -47,7 +47,7 @@ export function useSession(mode: Mode) {
       cancelled = true
       provider.dispose?.()
     }
-  }, [mode])
+  }, [mode, nonce])
 
   const next = useCallback(async () => {
     const p = providerRef.current

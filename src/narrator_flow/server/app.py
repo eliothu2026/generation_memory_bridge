@@ -436,3 +436,41 @@ async def ws_mic(websocket: WebSocket, sid: str) -> None:
             await worker_task
     with contextlib.suppress(Exception):
         await send({"type": "done"})
+
+
+DEFAULT_BASE_URL = "https://api.deepseek.com"
+
+
+class ConfigReq(BaseModel):
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+@app.get("/api/config")
+def get_config() -> dict:
+    """当前模型配置(绝不回传 key 明文,只报是否已配置)。"""
+    return {
+        "configured": bool(os.environ.get("DEEPSEEK_API_KEY")),
+        "base_url": os.environ.get("DEEPSEEK_BASE_URL", DEFAULT_BASE_URL),
+    }
+
+
+@app.post("/api/config")
+def set_config(req: ConfigReq) -> dict:
+    """从前端热配置模型 key / base_url —— 写进运行进程环境变量(仅内存,不落盘)。
+
+    这样后端可**不带 key 冷启动**,在界面里填入即刻生效(get_client 每次现读环境变量)。
+    api_key 传空字符串表示清除。
+    """
+    if req.api_key is not None:
+        key = req.api_key.strip()
+        if key:
+            os.environ["DEEPSEEK_API_KEY"] = key
+        else:
+            os.environ.pop("DEEPSEEK_API_KEY", None)
+    if req.base_url is not None and req.base_url.strip():
+        os.environ["DEEPSEEK_BASE_URL"] = req.base_url.strip()
+    return {
+        "configured": bool(os.environ.get("DEEPSEEK_API_KEY")),
+        "base_url": os.environ.get("DEEPSEEK_BASE_URL", DEFAULT_BASE_URL),
+    }

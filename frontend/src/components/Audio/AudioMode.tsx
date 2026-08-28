@@ -9,7 +9,7 @@ type Phase = 'idle' | 'working' | 'done' | 'error'
  * 音频模式:上传录音 → 后端 faster-whisper 转写 → 背压合并队列 + worker → 真实分析。
  * 与交互式会话不同,这里是**服务端推送**:上传后开一条 WS,被动接收流式快照。
  */
-export default function AudioMode() {
+export default function AudioMode({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [snap, setSnap] = useState<SessionSnapshot | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [status, setStatus] = useState('')
@@ -67,7 +67,7 @@ export default function AudioMode() {
 
   if (phase === 'idle') {
     return (
-      <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
         <label className="flex w-full max-w-md cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/10 bg-surface px-6 py-12 text-center transition hover:border-accent/40">
           <div className="text-4xl">🎙️</div>
           <div className="text-sm font-medium text-ink">上传一段长辈口述录音</div>
@@ -87,6 +87,11 @@ export default function AudioMode() {
             }}
           />
         </label>
+        {onOpenSettings && (
+          <button onClick={onOpenSettings} className="text-xs text-subtle underline-offset-2 hover:underline">
+            ⚙️ 配置 API Key
+          </button>
+        )}
       </div>
     )
   }
