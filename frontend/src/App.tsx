@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Mode } from './api/provider'
+import { resolveMode, type LiveInput, type TopMode } from './api/provider'
 import AudioMode from './components/Audio/AudioMode'
 import ChatArea from './components/Chat/ChatArea'
 import Sidebar from './components/Sidebar/Sidebar'
@@ -8,7 +8,11 @@ import TopBar from './components/TopBar'
 import { useSession } from './hooks/useSession'
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('offline')
+  // 两级模式:顶层 演示/实时(平级);实时之下再分 文字模拟/真实语音
+  const [topMode, setTopMode] = useState<TopMode>('demo')
+  const [liveInput, setLiveInput] = useState<LiveInput>('text')
+  const mode = resolveMode(topMode, liveInput) // 'offline' | 'backend' | 'audio'
+
   const { snap, loading, error, next, send, submitElder, reset } = useSession(mode)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [timelineCollapsed, setTimelineCollapsed] = useState(false)
@@ -30,8 +34,10 @@ export default function App() {
           segmentsPlayed={snap?.segmentsPlayed ?? 0}
           totalSegments={snap?.totalSegments ?? 0}
           onReset={reset}
-          mode={mode}
-          onModeChange={setMode}
+          topMode={topMode}
+          liveInput={liveInput}
+          onTopModeChange={setTopMode}
+          onLiveInputChange={setLiveInput}
         />
 
         {mode === 'audio' ? (
@@ -45,7 +51,7 @@ export default function App() {
             <div className="text-sm text-red-600">连接失败:{error}</div>
             <div className="max-w-md text-xs leading-relaxed text-subtle">
               {mode === 'backend'
-                ? '「实时(后端)」需要先启动后端并配置 key:export DEEPSEEK_API_KEY=sk-... 后 uvicorn narrator_flow.server.app:app;或切回上方「离线演示」。'
+                ? '「实时(后端)」需要先启动后端并配置 key:export DEEPSEEK_API_KEY=sk-... 后 uvicorn narrator_flow.server.app:app;或切回「演示模式」。'
                 : '请先生成 demo 数据:python scripts/gen_demo_script.py'}
             </div>
           </div>
