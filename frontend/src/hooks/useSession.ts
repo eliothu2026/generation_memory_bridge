@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SessionProvider, SessionSnapshot } from '../api/provider'
+import { BackendProvider } from '../api/backendProvider'
+import { OfflineProvider } from '../api/offlineProvider'
+import type { Mode, SessionProvider, SessionSnapshot } from '../api/provider'
 
 /**
- * 驱动一个 SessionProvider,把它返回的快照映射到 React state。
- * Phase 1 只用离线 provider,init 仅执行一次。
+ * 按当前模式驱动一个 SessionProvider。切换模式时会销毁旧 provider(关 WS)、
+ * 用新实现重新 init。所有动作方法都是异步的。
  */
-export function useSession(makeProvider: () => SessionProvider) {
+export function useSession(mode: Mode) {
   const providerRef = useRef<SessionProvider | null>(null)
   const [snap, setSnap] = useState<SessionSnapshot | null>(null)
   const [loading, setLoading] = useState(true)
@@ -13,9 +15,12 @@ export function useSession(makeProvider: () => SessionProvider) {
 
   useEffect(() => {
     let cancelled = false
-    const provider = makeProvider()
+    const provider: SessionProvider =
+      mode === 'backend' ? new BackendProvider() : new OfflineProvider()
     providerRef.current = provider
     setLoading(true)
+    setError(null)
+    setSnap(null)
     provider
       .init()
       .then((s) => {
@@ -32,19 +37,38 @@ export function useSession(makeProvider: () => SessionProvider) {
       })
     return () => {
       cancelled = true
+      provider.dispose?.()
     }
-    // 只初始化一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode])
+
+  const next = useCallback(async () => {
+    const p = providerRef.current
+    if (!p) return
+    try {
+      setSnap(await p.nextElderSegment())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }, [])
 
-  const next = useCallback(() => {
-    if (providerRef.current) setSnap(providerRef.current.nextElderSegment())
+  const send = useCallback(async (text: string) => {
+    const p = providerRef.current
+    if (!p) return
+    try {
+      setSnap(await p.sendGrandchild(text))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }, [])
-  const send = useCallback((text: string) => {
-    if (providerRef.current) setSnap(providerRef.current.sendGrandchild(text))
-  }, [])
-  const reset = useCallback(() => {
-    if (providerRef.current) setSnap(providerRef.current.reset())
+
+  const reset = useCallback(async () => {
+    const p = providerRef.current
+    if (!p) return
+    try {
+      setSnap(await p.reset())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }, [])
 
   return { snap, loading, error, next, send, reset }

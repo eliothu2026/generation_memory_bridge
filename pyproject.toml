@@ -29,6 +29,11 @@ live = [
 test = [
     "pytest>=7.0",
 ]
+# Web 服务(FastAPI + WebSocket 服务化)。安装:pip install -e ".[web]"
+web = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+]
 
 [project.scripts]
 narrator_flow = "narrator_flow.main:run"

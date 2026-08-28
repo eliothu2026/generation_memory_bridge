@@ -27,7 +27,7 @@ export class OfflineProvider implements SessionProvider {
     return this.snapshot()
   }
 
-  nextElderSegment(): SessionSnapshot {
+  async nextElderSegment(): Promise<SessionSnapshot> {
     const script = this.script
     if (script && this.cursor < script.steps.length) {
       const step = script.steps[this.cursor]
@@ -43,13 +43,13 @@ export class OfflineProvider implements SessionProvider {
     return this.snapshot()
   }
 
-  sendGrandchild(text: string): SessionSnapshot {
+  async sendGrandchild(text: string): Promise<SessionSnapshot> {
     const t = text.trim()
     if (t) this.messages.push({ id: mkId(), speaker: 'grandchild', text: t })
     return this.snapshot()
   }
 
-  reset(): SessionSnapshot {
+  async reset(): Promise<SessionSnapshot> {
     this.cursor = 0
     this.messages = []
     return this.snapshot()

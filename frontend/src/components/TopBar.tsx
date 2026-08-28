@@ -1,13 +1,27 @@
 import { RotateCcw } from 'lucide-react'
+import type { Mode } from '../api/provider'
 
 interface Props {
   sessionTitle: string
   segmentsPlayed: number
   totalSegments: number
   onReset: () => void
+  mode: Mode
+  onModeChange: (m: Mode) => void
 }
 
-export default function TopBar({ sessionTitle, segmentsPlayed, totalSegments, onReset }: Props) {
+export default function TopBar({
+  sessionTitle,
+  segmentsPlayed,
+  totalSegments,
+  onReset,
+  mode,
+  onModeChange,
+}: Props) {
+  const seg = (active: boolean) =>
+    'rounded-full px-3 py-1 transition ' +
+    (active ? 'bg-accent text-white shadow-soft' : 'text-subtle hover:text-ink')
+
   return (
     <header className="flex items-center justify-between border-b border-black/5 bg-surface px-4 py-2.5 md:px-6">
       <div className="min-w-0">
@@ -25,12 +39,17 @@ export default function TopBar({ sessionTitle, segmentsPlayed, totalSegments, on
         >
           <RotateCcw size={14} /> 重置
         </button>
-        <span
-          className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-subtle"
-          title="Phase 2 将接入「实时(后端)」模式"
+        <div
+          className="flex items-center rounded-full border border-black/10 bg-white p-0.5 text-xs font-medium"
+          title="离线:读打包数据、免后端。实时:连 FastAPI 后端(需先启动 uvicorn narrator_flow.server.app:app)"
         >
-          ● 离线演示
-        </span>
+          <button onClick={() => onModeChange('offline')} className={seg(mode === 'offline')}>
+            离线演示
+          </button>
+          <button onClick={() => onModeChange('backend')} className={seg(mode === 'backend')}>
+            实时(后端)
+          </button>
+        </div>
       </div>
     </header>
   )

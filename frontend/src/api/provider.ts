@@ -1,6 +1,6 @@
 import type { ChatMessage, SessionMeta, Timeline } from '../types'
 
-/** 供 UI 渲染的一份完整会话快照。 */
+/** 供 UI 渲染的一份完整会话快照(离线与后端两种数据源共用同一结构)。 */
 export interface SessionSnapshot {
   meta: SessionMeta
   messages: ChatMessage[]
@@ -10,19 +10,23 @@ export interface SessionSnapshot {
   totalSegments: number
 }
 
+export type Mode = 'offline' | 'backend'
+
 /**
  * 数据源抽象:离线(读打包脚本)与后端(FastAPI/WebSocket)共用同一接口,
- * 顶栏切换模式时只需替换实现。所有推进/发言方法返回最新快照。
+ * 顶栏切换模式时只需替换实现。所有方法都是异步的(后端走网络/WS)。
  */
 export interface SessionProvider {
-  /** 初始化(可能触发 fetch),返回首个快照。 */
+  /** 初始化(fetch / 建会话 / 连 WS),返回首个快照。 */
   init(): Promise<SessionSnapshot>
   /** 推进老人的下一段叙述。 */
-  nextElderSegment(): SessionSnapshot
+  nextElderSegment(): Promise<SessionSnapshot>
   /** 孙辈自由发言(右侧气泡)。 */
-  sendGrandchild(text: string): SessionSnapshot
+  sendGrandchild(text: string): Promise<SessionSnapshot>
   /** 重置到开头。 */
-  reset(): SessionSnapshot
+  reset(): Promise<SessionSnapshot>
+  /** 释放资源(如关闭 WebSocket)。 */
+  dispose?(): void
 }
 
 export const EMPTY_TIMELINE: Timeline = {
