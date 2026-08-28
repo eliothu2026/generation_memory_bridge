@@ -15,8 +15,8 @@ export function useSession(mode: Mode) {
 
   useEffect(() => {
     let cancelled = false
-    // 音频模式由 AudioMode 组件自行管理(上传 + WS 流式),此处不建 provider
-    if (mode === 'audio') {
+    // 音频 / 实时麦克风模式由各自组件自行管理(上传/采麦 + WS 流式),此处不建 provider
+    if (mode === 'audio' || mode === 'mic') {
       providerRef.current = null
       setSnap(null)
       setError(null)

@@ -29,7 +29,7 @@ export default function TopBar({
     'rounded-full px-2.5 py-1 transition ' +
     (active ? 'bg-white text-ink shadow-soft' : 'text-subtle hover:text-ink')
 
-  const isVoice = topMode === 'live' && liveInput === 'voice'
+  const isVoice = topMode === 'live' && liveInput !== 'text'
 
   return (
     <header className="flex items-center justify-between border-b border-black/5 bg-surface px-4 py-2.5 md:px-6">
@@ -66,17 +66,20 @@ export default function TopBar({
           </button>
         </div>
 
-        {/* 次级:仅「实时(后端)」下出现 —— 文字模拟 / 真实语音 */}
+        {/* 次级:仅「实时(后端)」下出现 —— 文字模拟 / 录音上传 / 实时麦克风 */}
         {topMode === 'live' && (
           <div
             className="flex animate-fade-in items-center rounded-full bg-slate-100 p-0.5 text-xs font-medium"
-            title="文字模拟:手输长辈口述。真实语音:上传录音→ASR→背压→分析"
+            title="文字模拟:手输长辈口述。录音上传:上传录音→ASR→背压→分析。实时麦克风:采麦→ASR→背压→分析"
           >
             <button onClick={() => onLiveInputChange('text')} className={subSeg(liveInput === 'text')}>
               💬 文字模拟
             </button>
-            <button onClick={() => onLiveInputChange('voice')} className={subSeg(liveInput === 'voice')}>
-              🎙️ 真实语音
+            <button onClick={() => onLiveInputChange('upload')} className={subSeg(liveInput === 'upload')}>
+              🎙️ 录音上传
+            </button>
+            <button onClick={() => onLiveInputChange('mic')} className={subSeg(liveInput === 'mic')}>
+              🎤 实时麦克风
             </button>
           </div>
         )}

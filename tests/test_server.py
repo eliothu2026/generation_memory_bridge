@@ -55,6 +55,14 @@ def test_audio_upload_without_key_returns_400(monkeypatch):
         assert r.status_code == 400
 
 
+def test_mic_session_without_key_returns_400(monkeypatch):
+    """实时麦克风同样需要 key(转写免 key,分析需要),缺 key 应 400。"""
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    with TestClient(app) as client:
+        r = client.post("/api/mic")
+        assert r.status_code == 400
+
+
 def test_ws_advance_scripted_and_grandchild():
     with TestClient(app) as client:
         sid = client.post("/api/sessions", json={"mode": "demo"}).json()["id"]

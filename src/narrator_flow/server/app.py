@@ -16,6 +16,8 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import json
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -183,8 +185,40 @@ class AudioSession:
         }
 
 
+@dataclass
+class MicSession:
+    """实时麦克风会话:浏览器分段推音频 → ASR → 背压合并队列 → 分析。"""
+
+    id: str
+    store: InMemorySessionStore
+    analyzer: Analyzer
+    state: NarratorFlowState = field(default_factory=NarratorFlowState)
+    messages: list[dict] = field(default_factory=list)
+    prev_notes: int = 0
+    seg: int = 0
+    started: bool = False
+    _mid: int = 0
+
+    def _next_id(self) -> str:
+        self._mid += 1
+        return f"m{self._mid}"
+
+    def snapshot(self) -> dict:
+        return {
+            "meta": {"id": self.id, "title": "实时麦克风 · 边听边理解",
+                     "subtitle": "麦克风 → ASR → 背压合并 → 真实分析", "elder_name": "长辈"},
+            "scripted": False,
+            "messages": self.messages,
+            "timeline": _timeline(self.state),
+            "eraEstimate": self.state.background.era_estimate,
+            "segmentsPlayed": len(self.messages),
+            "totalSegments": 0,
+        }
+
+
 SESSIONS: dict[str, ServerSession] = {}
 AUDIO_SESSIONS: dict[str, AudioSession] = {}
+MIC_SESSIONS: dict[str, MicSession] = {}
 
 
 def create_session(mode: str = "demo") -> ServerSession:
@@ -320,3 +354,85 @@ async def ws_audio(websocket: WebSocket, sid: str) -> None:
         return
     except Exception as e:  # noqa: BLE001 — faster-whisper 未装 / 模型下载失败 / 分析异常,回传前端
         await websocket.send_json({"type": "error", "message": str(e)})
+
+
+@app.post("/api/mic")
+def create_mic() -> dict:
+    """开一个实时麦克风会话(转写免 key,但后续分析需 key,故此处即校验)。"""
+    _require_key()
+    sid = uuid.uuid4().hex[:12]
+    SERVER_OUTPUT.mkdir(parents=True, exist_ok=True)
+    m = MicSession(id=sid, store=InMemorySessionStore(),
+                   analyzer=Analyzer(LLMPipelines(SERVER_OUTPUT / sid)))
+    MIC_SESSIONS[sid] = m
+    return {"id": sid, "snapshot": m.snapshot()}
+
+
+@app.websocket("/ws/mic/{sid}")
+async def ws_mic(websocket: WebSocket, sid: str) -> None:
+    """浏览器分段推来音频(二进制帧),逐段转写 → 喂背压队列;worker 并发合并分析 → 推快照。
+
+    worker 任务与收流循环并发运行,两者都可能向同一 WS 发送,故用 send_lock 串行化发送。
+    """
+    await websocket.accept()
+    m = MIC_SESSIONS.get(sid)
+    if not m:
+        await websocket.send_json({"type": "error", "message": "mic session not found"})
+        await websocket.close()
+        return
+    if m.started:
+        await websocket.send_json({"type": "snapshot", "snapshot": m.snapshot()})
+        return
+    m.started = True
+
+    from narrator_flow.streaming_app.asr import transcribe_segments  # 惰性
+
+    queue = CoalescingQueue()
+    send_lock = asyncio.Lock()
+
+    async def send(payload: dict) -> None:
+        async with send_lock:
+            await websocket.send_json(payload)
+
+    async def on_update(state: NarratorFlowState, chunk: TranscriptChunk, batch) -> None:
+        m.state = state
+        msg, m.prev_notes = _elder_message(
+            m._next_id(), chunk.text, state, m.prev_notes, coalesced_from=batch.raw_count,
+        )
+        m.messages.append(msg)
+        await send({"type": "snapshot", "snapshot": m.snapshot()})
+
+    worker = SessionWorker(m.id, m.store, m.analyzer, queue, on_update)
+    worker_task = asyncio.create_task(worker.run())
+    await send({"type": "snapshot", "snapshot": m.snapshot()})
+    try:
+        while True:
+            data = await websocket.receive()
+            if data.get("type") == "websocket.disconnect":
+                break
+            blob = data.get("bytes")
+            if blob:
+                m.seg += 1
+                tmp = SERVER_OUTPUT / f"{m.id}-{m.seg}.webm"
+                await asyncio.to_thread(tmp.write_bytes, blob)
+                try:
+                    texts = await asyncio.to_thread(transcribe_segments, str(tmp))
+                except Exception as e:  # noqa: BLE001 — 缺 [asr] / 解码失败,回传但不断流
+                    await send({"type": "error", "message": str(e)})
+                    continue
+                for t in texts:
+                    await queue.put(t)
+            else:
+                text = data.get("text")
+                if text:
+                    with contextlib.suppress(ValueError, TypeError):
+                        if json.loads(text).get("type") == "stop":
+                            break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await queue.close()
+        with contextlib.suppress(Exception):
+            await worker_task
+    with contextlib.suppress(Exception):
+        await send({"type": "done"})

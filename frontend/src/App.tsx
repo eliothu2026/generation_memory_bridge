@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { resolveMode, type LiveInput, type TopMode } from './api/provider'
 import AudioMode from './components/Audio/AudioMode'
+import MicMode from './components/Audio/MicMode'
 import ChatArea from './components/Chat/ChatArea'
 import Sidebar from './components/Sidebar/Sidebar'
 import TimelinePanel from './components/Timeline/TimelinePanel'
@@ -17,7 +18,12 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [timelineCollapsed, setTimelineCollapsed] = useState(false)
 
-  const title = mode === 'audio' ? '录音口述 · 实时分析' : snap?.meta.title || '代际记忆桥梁'
+  const title =
+    mode === 'mic'
+      ? '实时麦克风 · 边听边理解'
+      : mode === 'audio'
+        ? '录音口述 · 实时分析'
+        : snap?.meta.title || '代际记忆桥梁'
   const elderName = snap?.meta.elder_name ?? '老人'
 
   return (
@@ -42,6 +48,8 @@ export default function App() {
 
         {mode === 'audio' ? (
           <AudioMode />
+        ) : mode === 'mic' ? (
+          <MicMode />
         ) : loading ? (
           <div className="flex flex-1 items-center justify-center text-subtle">
             {mode === 'backend' ? '连接后端中…' : '加载中…'}

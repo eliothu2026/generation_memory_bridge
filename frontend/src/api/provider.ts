@@ -10,17 +10,19 @@ export interface SessionSnapshot {
   totalSegments: number
 }
 
-/** 内部数据源类型(与具体 provider 对应)。 */
-export type Mode = 'offline' | 'backend' | 'audio'
+/** 内部数据源类型(与具体 provider / 组件对应)。 */
+export type Mode = 'offline' | 'backend' | 'audio' | 'mic'
 
-/** UI 两级模式:顶层 演示/实时(平级);实时之下再分 文字模拟/真实语音。 */
+/** UI 两级模式:顶层 演示/实时(平级);实时之下再分 文字模拟 / 录音上传 / 实时麦克风。 */
 export type TopMode = 'demo' | 'live'
-export type LiveInput = 'text' | 'voice'
+export type LiveInput = 'text' | 'upload' | 'mic'
 
 /** 由两级 UI 选择派生内部数据源类型。 */
 export function resolveMode(topMode: TopMode, liveInput: LiveInput): Mode {
   if (topMode === 'demo') return 'offline'
-  return liveInput === 'text' ? 'backend' : 'audio'
+  if (liveInput === 'text') return 'backend'
+  if (liveInput === 'upload') return 'audio'
+  return 'mic'
 }
 
 /**
