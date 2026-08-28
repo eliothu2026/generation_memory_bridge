@@ -136,6 +136,21 @@
       @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
       @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       .fade { animation: fadeUp 0.35s cubic-bezier(0.2,0,0,1) both; }
+
+      /* 开场强制说明弹窗:一打开即显示,点「开始体验」才进入 */
+      .intro { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, 0.45); }
+      .intro.hidden { display: none; }
+      .intro-card { max-width: 540px; width: 100%; background: #fff; border-radius: 20px; padding: 28px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); animation: fadeUp 0.35s cubic-bezier(0.2,0,0,1) both; }
+      .intro-h { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+      .intro-sub { font-size: 12px; color: var(--subtle); margin: 0 0 16px; }
+      .intro-body { font-size: 14px; line-height: 1.75; color: #374151; }
+      .intro-body p { margin: 0 0 10px; }
+      .intro-body b { color: var(--ink); }
+      .intro-body .k { background: #f1f3f4; border-radius: 6px; padding: 1px 6px; font-size: 12px; }
+      .intro-foot { margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .intro-note { font-size: 11px; color: var(--subtle); }
+      .intro-ok { flex: none; border: none; border-radius: 999px; background: var(--accent); color: #fff; padding: 10px 22px; font-size: 14px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+      .intro-ok:hover { background: #1765cc; }
     </style>
   </head>
   <body>
@@ -197,6 +212,24 @@
       </div>
     </div>
 
+    <!-- 开场强制说明弹窗:打开即显示,点「开始体验」后才进入 -->
+    <div class="intro" id="intro">
+      <div class="intro-card">
+        <h2 class="intro-h">👋 先说明一下 · 这是一个演示</h2>
+        <p class="intro-sub">代际记忆桥梁 · 纯静态离线预览</p>
+        <div class="intro-body">
+          <p>你正在看的是一个<b>纯静态、0 依赖</b>的演示:用一段<b>预录</b>的示例口述(农村长辈回忆「大槐树」)<b>逐段回放</b>,让你<b>零成本</b>先感受产品的使用流程。</p>
+          <p>它与完整产品<b>同款界面与交互</b>,但为了双击即开:这里<b>不调用任何 AI、不联网、无需后端或 API Key</b>——右侧的"实时整理"其实是预先录好的结果回放。</p>
+          <p><b>完整版</b>还支持:真实多会话(持久化)、真实 DeepSeek 分析、🎙️ 录音上传 / 🎤 实时麦克风语音输入、⚙️ 模型热配置等,详见项目 README。</p>
+          <p>点「开始体验」后,反复点右下角 <span class="k">老人继续讲 ▶</span> 即可看它逐段整理时间线、补背景、想追问。</p>
+        </div>
+        <div class="intro-foot">
+          <span class="intro-note">仅演示用途 · 数据为示例</span>
+          <button class="intro-ok" onclick="closeIntro()">开始体验 →</button>
+        </div>
+      </div>
+    </div>
+
     <script id="demo-data" type="application/json">__DEMO_DATA__</script>
     <script>
       var DATA = JSON.parse(document.getElementById('demo-data').textContent);
@@ -207,6 +240,8 @@
 
       document.getElementById('sb-title').textContent = session.title || '演示';
       document.getElementById('top-title').textContent = session.title || '演示';
+
+      function closeIntro() { document.getElementById('intro').classList.add('hidden'); }
 
       function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
