@@ -66,9 +66,11 @@
 
       /* ---------- 底层:对话区 ---------- */
       .chat { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; }
-      .chat-scroll { flex: 1; overflow-y: auto; padding: 28px var(--pad-right) 10px var(--pad-left); transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
+      .chat-top { flex: none; padding: 34px var(--pad-right) 0 var(--pad-left); transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
+      .chat-top-inner { max-width: 720px; margin: 0 auto; height: 28px; display: flex; align-items: center; font-size: 14.5px; font-weight: 650; color: var(--ink); letter-spacing: -0.01em; }
+      .chat-scroll { flex: 1; overflow-y: auto; padding: 6px var(--pad-right) 10px var(--pad-left); transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
       .chat-inner { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
-      .empty { margin-top: 68px; text-align: center; color: var(--muted); }
+      .empty { margin-top: 44px; text-align: center; color: var(--muted); }
       .empty .mk { display: inline-grid; place-items: center; width: 60px; height: 60px; border-radius: 16px; background: var(--accent-tint); color: var(--accent); margin-bottom: 6px; }
       .empty-title { margin: 12px 0 0; font-size: 19px; font-weight: 650; color: var(--ink); letter-spacing: -0.01em; }
       .empty-sub { margin: 5px 0 0; font-size: 14px; }
@@ -236,6 +238,7 @@
     <div class="app">
       <!-- 底层:对话区 -->
       <main class="chat">
+        <div class="chat-top"><div class="chat-top-inner" id="chat-title"></div></div>
         <div class="chat-scroll"><div class="chat-inner" id="messages"></div></div>
         <div class="listen" id="listen">
           <button class="listen-inner" onclick="toggleListen()" aria-label="开始 / 停止聆听">
@@ -343,7 +346,7 @@
         arrowR: '<path d="M5 12h13M13 6l6 6-6 6"/>',
         panelR: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M14 5v14"/><path d="M6 9.5l2.5 2.5-2.5 2.5"/>',
         panelL: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 5v14"/><path d="M17 9.5l-2.5 2.5 2.5 2.5"/>',
-        bridge: '<path d="M2.5 8.5h19"/><path d="M3 18a9 9 0 0118 0"/><path d="M2.5 18h19"/>'
+        bridge: '<path d="M4 19v-6a8 8 0 0116 0v6"/>'
       };
       function icon(name, size) {
         var s = size || 16;
@@ -357,6 +360,7 @@
       }
 
       document.getElementById('sb-title').textContent = session.title || '演示';
+      document.getElementById('chat-title').textContent = session.title || '演示';
 
       function closeIntro() { document.getElementById('intro').classList.add('hidden'); obStart(); }
 
