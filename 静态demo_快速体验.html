@@ -138,12 +138,14 @@
       .new-btn .i { color: var(--accent); }
       .panel-list { margin-top: 14px; flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
       .grp { padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--faint); letter-spacing: 0.04em; }
-      .card { display: flex; align-items: flex-start; gap: 10px; border-radius: var(--r-card); padding: 10px 12px; margin-bottom: 3px; transition: background .15s; }
+      .card { display: flex; align-items: center; gap: 10px; border-radius: var(--r-card); padding: 10px 12px; margin-bottom: 3px; transition: background .15s; }
       .card.active { background: var(--accent-tint2); }
       .card .ci { color: var(--faint); margin-top: 1px; }
       .card.active .ci { color: var(--accent); }
       .card .ct { font-size: 13.5px; font-weight: 550; }
       .card.active .ct { color: var(--accent); }
+      .share { margin-left: auto; flex: none; border: none; background: transparent; color: var(--faint); border-radius: var(--r-pill); padding: 5px; display: grid; place-items: center; cursor: pointer; transition: background .15s, color .15s; }
+      .share:hover { background: var(--neutral-tint); color: var(--accent); }
       .card .cs { font-size: 12px; color: var(--muted); margin-top: 1px; }
       .card-note { padding: 5px 12px 2px 44px; font-size: 11.5px; color: var(--faint); }
       .panel-foot { padding: 12px; }
@@ -266,6 +268,7 @@
           <div class="card active">
             <span class="ci i" data-icon="chat"></span>
             <div><div class="ct" id="sb-title">大槐树的故事</div></div>
+            <button class="share" title="导出整理好的回忆(.md)" onclick="alert('此按钮可将整理好的回忆导出为 .md 文件(完整项目中可用)。导出的记忆档案可作为其他 AI / agent 的会话上下文,帮助你更深入地理解祖辈的故事。此为纯静态演示,暂不支持导出。')"><span class="i" data-icon="share" data-size="15"></span></button>
           </div>
           <div class="card-note">此会话为演示示例</div>
         </div>
@@ -337,6 +340,7 @@
         plus: '<path d="M12 5v14M5 12h14"/>',
         sparkle: '<path d="M12 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/>',
         chat: '<path d="M20 14.5a2 2 0 01-2 2H8l-4 3.5V6a2 2 0 012-2h12a2 2 0 012 2z"/>',
+        share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.1 10.8l7.8-4.5M8.1 13.2l7.8 4.5"/>',
         info: '<circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 8h.01"/>',
         bulb: '<path d="M9.5 18.5h5M10.2 21.5h3.6"/><path d="M12 3a6 6 0 00-3.7 10.7c.5.4.9 1 .9 1.8h5.6c0-.8.4-1.4.9-1.8A6 6 0 0012 3z"/>',
         clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.9"/>',
