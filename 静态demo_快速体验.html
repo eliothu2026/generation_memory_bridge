@@ -139,7 +139,7 @@
       .card .ct { font-size: 13.5px; font-weight: 550; }
       .card.active .ct { color: var(--accent); }
       .card .cs { font-size: 12px; color: var(--muted); margin-top: 1px; }
-      .sb-note { border-radius: var(--r-sm); background: var(--neutral-tint); color: var(--muted); font-size: 11.5px; line-height: 1.65; padding: 10px 12px; margin: 4px 2px; }
+      .card-note { padding: 5px 12px 2px 44px; font-size: 11.5px; color: var(--faint); }
       .panel-foot { padding: 12px; }
       .cfg { display: flex; width: 100%; align-items: center; gap: 8px; border: none; background: var(--neutral-tint); color: var(--ink); border-radius: var(--r-pill); padding: 11px 16px; font-size: 13px; font-weight: 600; transition: background .15s, color .15s, transform .05s; }
       .cfg:hover { background: var(--accent-tint); color: var(--accent); }
@@ -195,8 +195,8 @@
       .intro-body p { margin: 0 0 11px; }
       .intro-body b { color: var(--ink); font-weight: 600; }
       .intro-body .k { background: var(--neutral-tint); border-radius: 6px; padding: 1px 7px; font-size: 12.5px; color: var(--ink); }
-      .intro-foot { margin-top: 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .intro-note { font-size: 11px; color: var(--faint); }
+      .intro-foot { margin-top: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+      .intro-link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
       .intro-ok { flex: none; display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent); padding: 11px 22px; font-size: 14px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, transform .05s; }
       .intro-ok:hover { background: var(--accent-strong); }
       .intro-ok:active { transform: translateY(1px); }
@@ -239,16 +239,15 @@
           <div class="brand">代际记忆桥梁 <span class="badge-static">静态演示</span></div>
         </div>
         <div class="panel-pad">
-          <button class="new-btn" onclick="reset()"><span class="i" data-icon="plus"></span> 新建会话</button>
+          <button class="new-btn" onclick="alert('多会话管理(新建 / 切换 / 删除,均持久化)是完整项目的能力,本纯静态演示暂不支持;可在完整项目中体验(仓库链接见开场说明)。')"><span class="i" data-icon="plus"></span> 新建会话</button>
         </div>
         <div class="panel-list">
-          <div class="grp">示例</div>
+          <div class="grp">我的会话</div>
           <div class="card active">
-            <span class="ci i" data-icon="sparkle"></span>
-            <div><div class="ct" id="sb-title">大槐树的故事</div><div class="cs">离线回放，免 key</div></div>
+            <span class="ci i" data-icon="chat"></span>
+            <div><div class="ct" id="sb-title">大槐树的故事</div></div>
           </div>
-          <div class="grp" style="margin-top:14px">我的会话</div>
-          <div class="sb-note">这是纯静态预览(离线流程)。真实多会话、语音输入与真实分析,请用完整项目(见 README)。</div>
+          <div class="card-note">此会话为演示示例</div>
         </div>
         <div class="panel-foot">
           <button class="cfg" onclick="alert('完整项目中可在此配置模型 API Key(DeepSeek):支持不带 key 冷启动,界面里填入即用。此为纯静态演示,无需任何配置。')">
@@ -280,17 +279,15 @@
       <div class="intro-card">
         <div class="intro-mark">
           <span class="mk" data-icon="bridge" data-size="18"></span>
-          <span class="t">代际记忆桥梁 · 纯静态离线预览</span>
+          <span class="t">代际记忆桥梁</span>
         </div>
-        <h2 class="intro-h">先说明一下 · 这是一个演示</h2>
+        <h2 class="intro-h">关于这个演示</h2>
         <div class="intro-body">
-          <p>你正在看的是一个<b>纯静态、0 依赖</b>的演示:用一段<b>预录</b>的示例口述(农村长辈回忆「大槐树」)逐段回放,让你零成本先感受产品的使用流程。</p>
-          <p>它与完整产品<b>同款界面与交互</b>;但为了双击即开,这里<b>不调用任何 AI、不联网、无需后端或 API Key</b>,右侧的"实时整理"是预先录好的结果回放。</p>
-          <p><b>完整版</b>还支持:真实多会话(持久化)、真实 DeepSeek 分析、录音上传与实时麦克风语音输入、模型热配置等,详见项目 README。</p>
-          <p>点「开始体验」后,底部会显示 AI <b>正在聆听</b>;点每段老人气泡下的 <span class="k">老人继续讲</span> 即可逐段推进,看它实时整理时间线、补背景、想追问。</p>
+          <p>这是一个<b>无后端、未调用任何 LLM Key</b> 的纯 HTML demo,仅用于演示前端交互。</p>
+          <p>完整版项目支持真实多会话(持久化)、真实 DeepSeek 分析、录音上传与实时麦克风语音输入、模型热配置等。</p>
+          <p>详见:<a class="intro-link" href="https://github.com/eliothu2026/generation_memory_bridge" target="_blank" rel="noopener">github.com/eliothu2026/generation_memory_bridge</a></p>
         </div>
         <div class="intro-foot">
-          <span class="intro-note">仅演示用途,数据为示例</span>
           <button class="intro-ok" onclick="closeIntro()">开始体验 <span class="i" data-icon="arrowR"></span></button>
         </div>
       </div>
@@ -308,6 +305,7 @@
       var ICONS = {
         plus: '<path d="M12 5v14M5 12h14"/>',
         sparkle: '<path d="M12 3.5l1.7 5 5 1.7-5 1.7-1.7 5-1.7-5-5-1.7 5-1.7z"/>',
+        chat: '<path d="M20 14.5a2 2 0 01-2 2H8l-4 3.5V6a2 2 0 012-2h12a2 2 0 012 2z"/>',
         info: '<circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 8h.01"/>',
         bulb: '<path d="M9.5 18.5h5M10.2 21.5h3.6"/><path d="M12 3a6 6 0 00-3.7 10.7c.5.4.9 1 .9 1.8h5.6c0-.8.4-1.4.9-1.8A6 6 0 0012 3z"/>',
         clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.9"/>',
