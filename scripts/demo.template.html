@@ -102,14 +102,18 @@
 
       /* 底部:持续聆听指示(随对话区居中于两卡片之间)*/
       .listen { padding: 14px var(--pad-right) 20px var(--pad-left); display: flex; justify-content: center; transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
-      .listen-inner { display: inline-flex; align-items: center; gap: 13px; }
-      .listen .dot { position: relative; width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent); display: grid; place-items: center; }
-      .listen .ping { position: absolute; inset: 0; border-radius: var(--r-pill); border: 2px solid var(--accent); animation: ping 1.9s cubic-bezier(0, 0, .2, 1) infinite; }
-      .listen-txt { line-height: 1.35; }
+      .listen-inner { display: inline-flex; align-items: center; gap: 13px; border: none; background: transparent; border-radius: var(--r-pill); padding: 8px 18px 8px 8px; cursor: pointer; transition: background .15s; }
+      .listen-inner:hover { background: var(--neutral-tint); }
+      .listen .dot { position: relative; width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--neutral-tint); color: var(--muted); display: grid; place-items: center; transition: background .18s, color .18s; }
+      .listen.active .dot { background: var(--accent-tint); color: var(--accent); }
+      .listen .ping { position: absolute; inset: 0; border-radius: var(--r-pill); border: 2px solid var(--accent); opacity: 0; }
+      .listen.active .ping { animation: ping 1.9s cubic-bezier(0, 0, .2, 1) infinite; }
+      .listen-txt { line-height: 1.35; text-align: left; }
       .listen .lt { font-size: 13px; font-weight: 600; color: var(--ink); }
       .listen .ls { font-size: 11.5px; color: var(--faint); }
       .wave { display: inline-flex; align-items: center; gap: 3px; height: 20px; margin-left: 2px; }
-      .wave i { width: 3px; height: 6px; border-radius: 2px; background: var(--accent); display: block; animation: wave 1.1s ease-in-out infinite; }
+      .wave i { width: 3px; height: 6px; border-radius: 2px; background: var(--accent); display: block; opacity: .4; }
+      .listen.active .wave i { animation: wave 1.1s ease-in-out infinite; }
       .wave i:nth-child(2) { animation-delay: .18s; }
       .wave i:nth-child(3) { animation-delay: .36s; }
       .wave i:nth-child(4) { animation-delay: .54s; }
@@ -145,7 +149,6 @@
       .cfg:hover { background: var(--accent-tint); color: var(--accent); }
       .cfg:active { transform: translateY(1px); }
       .cfg .i { color: var(--accent); }
-      .panel-cap { margin-top: 9px; text-align: center; font-size: 11px; color: var(--faint); }
 
       /* 右侧时间线卡片 */
       .timeline.collapsed { bottom: auto; height: auto; width: 52px; border-radius: 16px; padding: 14px 0; align-items: center; gap: 14px; cursor: pointer; }
@@ -201,6 +204,20 @@
       .intro-ok:hover { background: var(--accent-strong); }
       .intro-ok:active { transform: translateY(1px); }
 
+      /* 开屏引导:聚光高亮当前区域,其余区域压暗 */
+      .onboard { display: none; position: fixed; inset: 0; z-index: 90; }
+      .onboard.show { display: block; }
+      .ob-hole { position: fixed; border-radius: var(--r-panel); box-shadow: 0 0 0 9999px rgba(14, 17, 15, 0.62); pointer-events: none; transition: left .32s cubic-bezier(0.2,0,0,1), top .32s cubic-bezier(0.2,0,0,1), width .32s cubic-bezier(0.2,0,0,1), height .32s cubic-bezier(0.2,0,0,1); }
+      .ob-pop { position: fixed; z-index: 92; background: var(--card-left); border-radius: 16px; box-shadow: var(--shadow-float); padding: 18px 18px 14px; transition: left .32s cubic-bezier(0.2,0,0,1), top .32s cubic-bezier(0.2,0,0,1); }
+      .ob-text { font-size: 14px; line-height: 1.72; color: var(--ink); }
+      .ob-foot { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .ob-dots { display: inline-flex; align-items: center; gap: 6px; }
+      .ob-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--neutral-tint); transition: width .2s, background .2s; }
+      .ob-dot.on { background: var(--accent); width: 18px; }
+      .ob-ok { border: none; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent); padding: 9px 18px; font-size: 13px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, transform .05s; }
+      .ob-ok:hover { background: var(--accent-strong); }
+      .ob-ok:active { transform: translateY(1px); }
+
       @media (max-width: 1120px) {
         :root { --pad-left: 292px; --pad-right: 306px; }
         .app.tl-collapsed { --pad-right: 96px; }
@@ -211,7 +228,7 @@
         .fade, .note, .chips, .ev, .intro-card { animation: none !important; }
         .listen .ping, .wave i { animation: none !important; }
         .wave i { height: 11px; opacity: .8; }
-        .chat-scroll, .listen { transition: none !important; }
+        .chat-scroll, .listen, .ob-hole, .ob-pop { transition: none !important; }
       }
     </style>
   </head>
@@ -220,15 +237,15 @@
       <!-- 底层:对话区 -->
       <main class="chat">
         <div class="chat-scroll"><div class="chat-inner" id="messages"></div></div>
-        <div class="listen">
-          <div class="listen-inner">
-            <span class="dot"><span class="ping"></span><span class="i" data-icon="mic" data-size="18"></span></span>
+        <div class="listen" id="listen">
+          <button class="listen-inner" onclick="toggleListen()" aria-label="开始 / 停止聆听">
+            <span class="dot"><span class="ping"></span><span class="i" id="dot-ic" data-icon="mic" data-size="18"></span></span>
             <div class="listen-txt">
-              <div class="lt">正在聆听这场对话…</div>
+              <div class="lt" id="listen-lt">点击后我将开始陪伴你们的对话</div>
               <div class="ls">AI 边听边理解,自动整理时间线、补背景、想追问</div>
             </div>
             <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
-          </div>
+          </button>
         </div>
       </main>
 
@@ -253,7 +270,6 @@
           <button class="cfg" onclick="alert('完整项目中可在此配置模型 API Key(DeepSeek):支持不带 key 冷启动,界面里填入即用。此为纯静态演示,无需任何配置。')">
             <span class="i" data-icon="key"></span> 配置 LLM KEY
           </button>
-          <div class="panel-cap">纯静态演示 · 双击即开</div>
         </div>
       </aside>
 
@@ -293,6 +309,18 @@
       </div>
     </div>
 
+    <!-- 开屏引导:关闭弹窗后按 左→中→右 逐区域介绍(其余区域压暗)-->
+    <div class="onboard" id="onboard">
+      <div class="ob-hole" id="ob-hole"></div>
+      <div class="ob-pop" id="ob-pop">
+        <div class="ob-text" id="ob-text"></div>
+        <div class="ob-foot">
+          <div class="ob-dots" id="ob-dots"></div>
+          <button class="ob-ok" onclick="obNext()">我知道了</button>
+        </div>
+      </div>
+    </div>
+
     <script id="demo-data" type="application/json">__DEMO_DATA__</script>
     <script>
       var DATA = JSON.parse(document.getElementById('demo-data').textContent);
@@ -311,6 +339,7 @@
         clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.9"/>',
         key: '<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M17 6l2.5 2.5M14 9l2 2"/>',
         mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/>',
+        stop: '<rect x="6" y="6" width="12" height="12" rx="2.5"/>',
         arrowR: '<path d="M5 12h13M13 6l6 6-6 6"/>',
         panelR: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M14 5v14"/><path d="M6 9.5l2.5 2.5-2.5 2.5"/>',
         panelL: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 5v14"/><path d="M17 9.5l-2.5 2.5 2.5 2.5"/>',
@@ -329,7 +358,7 @@
 
       document.getElementById('sb-title').textContent = session.title || '演示';
 
-      function closeIntro() { document.getElementById('intro').classList.add('hidden'); }
+      function closeIntro() { document.getElementById('intro').classList.add('hidden'); obStart(); }
 
       function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -413,8 +442,60 @@
         document.querySelector('.app').classList.toggle('tl-collapsed', timelineCollapsed);
       }
 
+      // 底部聆听态开关:静止(点击前)⇄ 动态(聆听中)
+      var listening = false;
+      function toggleListen() { listening = !listening; renderListen(); }
+      function renderListen() {
+        document.getElementById('listen').classList.toggle('active', listening);
+        document.getElementById('dot-ic').innerHTML = icon(listening ? 'stop' : 'mic', 18);
+        document.getElementById('listen-lt').textContent = listening ? '正在聆听这场对话' : '点击后我将开始陪伴你们的对话';
+      }
+
+      // 开屏引导:左→中→右,高亮当前区域、压暗其余,「我知道了」推进/完成
+      var OB_STEPS = [
+        { region: 'left',  text: '这里是你的会话区。可以在此管理会话记录,并配置 LLM Key。' },
+        { region: 'mid',   text: '中间是对话区。点击底部按钮即可开启 AI 的陪伴服务,过程中它会实时推送历史背景补充与互动问题推荐。' },
+        { region: 'right', text: '右侧会实时展示 AI 为你梳理出的时间线与逻辑脉络。' }
+      ];
+      var obIndex = 0;
+      function obRect(region) {
+        var lp = document.querySelector('.panel-left').getBoundingClientRect();
+        var rp = document.querySelector('.panel-right').getBoundingClientRect();
+        if (region === 'left') return lp;
+        if (region === 'right') return rp;
+        return { left: lp.right + 12, top: lp.top, width: (rp.left - 12) - (lp.right + 12), height: lp.height };
+      }
+      function renderObStep() {
+        var step = OB_STEPS[obIndex], r = obRect(step.region), pad = 6;
+        var hole = document.getElementById('ob-hole');
+        hole.style.left = (r.left - pad) + 'px';
+        hole.style.top = (r.top - pad) + 'px';
+        hole.style.width = (r.width + pad * 2) + 'px';
+        hole.style.height = (r.height + pad * 2) + 'px';
+        document.getElementById('ob-text').textContent = step.text;
+        document.getElementById('ob-dots').innerHTML =
+          OB_STEPS.map(function (_, i) { return '<span class="ob-dot' + (i === obIndex ? ' on' : '') + '"></span>'; }).join('');
+        var pop = document.getElementById('ob-pop'), pw = 300, vw = window.innerWidth, vh = window.innerHeight;
+        var left, top = r.top + 22;
+        if (step.region === 'left') left = r.left + r.width + 22;
+        else if (step.region === 'right') left = r.left - pw - 22;
+        else { left = r.left + (r.width - pw) / 2; top = r.top + r.height / 2 - 70; }
+        pop.style.width = pw + 'px';
+        pop.style.left = Math.max(12, Math.min(left, vw - pw - 12)) + 'px';
+        pop.style.top = Math.max(12, Math.min(top, vh - 170)) + 'px';
+      }
+      function obStart() { obIndex = 0; document.getElementById('onboard').classList.add('show'); renderObStep(); }
+      function obNext() {
+        obIndex++;
+        if (obIndex >= OB_STEPS.length) { document.getElementById('onboard').classList.remove('show'); return; }
+        renderObStep();
+      }
+      window.addEventListener('resize', function () {
+        if (document.getElementById('onboard').classList.contains('show')) renderObStep();
+      });
+
       renderIcons();
-      renderMessages(); renderTimeline();
+      renderMessages(); renderTimeline(); renderListen();
     </script>
   </body>
 </html>
