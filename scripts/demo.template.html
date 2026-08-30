@@ -202,11 +202,15 @@
       .intro-body p { margin: 0 0 11px; }
       .intro-body b { color: var(--ink); font-weight: 600; }
       .intro-body .k { background: var(--neutral-tint); border-radius: 6px; padding: 1px 7px; font-size: 12.5px; color: var(--ink); }
-      .intro-foot { margin-top: 24px; display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+      .intro-foot { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .intro-link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
+      .intro-list { margin: 2px 0 12px; padding-left: 18px; }
+      .intro-list li { margin-bottom: 5px; line-height: 1.7; }
       .intro-ok { flex: none; display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent); padding: 11px 22px; font-size: 14px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, transform .05s; }
       .intro-ok:hover { background: var(--accent-strong); }
       .intro-ok:active { transform: translateY(1px); }
+      .intro-back { border: none; background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; padding: 9px 6px; border-radius: var(--r-pill); transition: color .15s; }
+      .intro-back:hover { color: var(--ink); }
 
       /* 开屏引导:聚光高亮当前区域,其余区域压暗 */
       .onboard { display: none; position: fixed; inset: 0; z-index: 90; }
@@ -303,14 +307,34 @@
           <span class="mk" data-icon="bridge" data-size="18"></span>
           <span class="t">代际记忆桥梁</span>
         </div>
-        <h2 class="intro-h">关于这个演示</h2>
-        <div class="intro-body">
-          <p>这是一个<b>无后端、未调用任何 LLM Key</b> 的纯 HTML demo,仅用于演示前端交互。</p>
-          <p>完整版项目支持真实多会话(持久化)、真实 DeepSeek 分析、录音上传与实时麦克风语音输入、模型热配置等。</p>
-          <p>详见:<a class="intro-link" href="https://github.com/eliothu2026/generation_memory_bridge" target="_blank" rel="noopener">github.com/eliothu2026/generation_memory_bridge</a></p>
+
+        <div class="intro-page" id="intro-p1">
+          <h2 class="intro-h">关于这个产品</h2>
+          <div class="intro-body">
+            <p><b>代际记忆桥梁</b>是一个"边听边理解"的 AI 倾听者:陪长辈口述家族往事时,在他们讲述的<b>同时</b>,把零散、跳跃的回忆一点点整理清楚。</p>
+            <p>它会实时并行做几件事:</p>
+            <ul class="intro-list">
+              <li><b>梳理时间线</b>——把跳来跳去的讲述重建成有先后、有因果的脉络;</li>
+              <li><b>补全时代背景</b>——从只言片语推断年代与社会背景,并由考据环节核实;</li>
+              <li><b>建议追问</b>——替年轻人想一两个具体问题,让对话不冷场;</li>
+              <li><b>还原记忆画面</b>——把反复提到的老物件逐步描绘出来。</li>
+            </ul>
+            <p>市面上的转写工具只解决"记录",这里想补上"<b>理解</b>":让珍贵却易流失的长辈记忆,沉淀成一场更有温度的祖孙对话。</p>
+          </div>
         </div>
+
+        <div class="intro-page" id="intro-p2" hidden>
+          <h2 class="intro-h">关于这个 demo</h2>
+          <div class="intro-body">
+            <p>这是一个<b>无后端、未调用任何 LLM Key</b> 的纯 HTML demo,仅用于演示前端交互。</p>
+            <p>完整版项目支持真实多会话(持久化)、真实 DeepSeek 分析、录音上传与实时麦克风语音输入、模型热配置等。</p>
+            <p>详见:<a class="intro-link" href="https://github.com/eliothu2026/generation_memory_bridge" target="_blank" rel="noopener">github.com/eliothu2026/generation_memory_bridge</a></p>
+          </div>
+        </div>
+
         <div class="intro-foot">
-          <button class="intro-ok" onclick="closeIntro()">开始体验 <span class="i" data-icon="arrowR"></span></button>
+          <button class="intro-back" id="intro-back" style="visibility:hidden" onclick="introPage(1)">上一页</button>
+          <button class="intro-ok" id="intro-primary" onclick="introPrimary()">下一页 <span class="i" data-icon="arrowR"></span></button>
         </div>
       </div>
     </div>
@@ -367,6 +391,17 @@
       document.getElementById('chat-title').textContent = session.title || '演示';
 
       function closeIntro() { document.getElementById('intro').classList.add('hidden'); obStart(); }
+
+      // 开场弹窗两页:第 1 页「关于这个产品」→ 第 2 页「关于这个 demo」→ 开始体验
+      var introPageNum = 1;
+      function introPage(n) {
+        introPageNum = n;
+        document.getElementById('intro-p1').hidden = (n !== 1);
+        document.getElementById('intro-p2').hidden = (n !== 2);
+        document.getElementById('intro-back').style.visibility = (n === 1) ? 'hidden' : 'visible';
+        document.getElementById('intro-primary').innerHTML = (n === 1 ? '下一页 ' : '开始体验 ') + icon('arrowR');
+      }
+      function introPrimary() { if (introPageNum === 1) introPage(2); else closeIntro(); }
 
       function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
