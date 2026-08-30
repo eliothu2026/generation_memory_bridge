@@ -9,6 +9,8 @@
         --bg: #f3f1ec;
         --surface: #fcfbf9;
         --elev: #ffffff;
+        --canvas: #fcfbf9;      /* 对话区底色(两卡片浮于其上)*/
+        --card: #ffffff;        /* 悬浮卡片色 */
         --ink: #23201b;
         --muted: #6f685c;
         --faint: #9a927f;
@@ -18,26 +20,29 @@
         --accent-strong: #285a4a;
         --on-accent: #f6faf7;
         --accent-tint: rgba(47, 107, 87, 0.10);
-        --accent-tint2: rgba(47, 107, 87, 0.055);
+        --accent-tint2: rgba(47, 107, 87, 0.06);
         --elder-bubble: #eeeadf;
         --neutral-tint: rgba(35, 32, 27, 0.05);
         --scroll: #d8d2c6;
-        --shadow: 0 1px 2px rgba(35, 32, 20, 0.05), 0 8px 24px -12px rgba(35, 32, 20, 0.14);
         --shadow-sm: 0 1px 2px rgba(35, 32, 20, 0.06);
-        --r-bubble: 18px; --r-card: 14px; --r-sm: 10px; --r-pill: 999px;
+        --shadow-float: 0 2px 6px rgba(35, 32, 20, 0.04), 0 22px 48px -18px rgba(35, 32, 20, 0.24);
+        --r-bubble: 18px; --r-card: 14px; --r-sm: 10px; --r-pill: 999px; --r-panel: 22px;
+        --pad-left: 336px; --pad-right: 392px;   /* 对话区左右留白,为两卡片让位 */
       }
+      .app.tl-collapsed { --pad-right: 104px; }
       @media (prefers-color-scheme: dark) {
         :root {
           --bg: #17150f; --surface: #1e1b15; --elev: #24211a;
+          --canvas: #1a1811; --card: #24211a;
           --ink: #ece6da; --muted: #a89e8c; --faint: #7d7565;
           --line: rgba(255, 255, 255, 0.10);
           --accent: #83c3ad; --accent-fill: #2f6b57; --accent-strong: #3a7d67;
           --on-accent: #f3faf6;
-          --accent-tint: rgba(131, 195, 173, 0.15); --accent-tint2: rgba(131, 195, 173, 0.08);
+          --accent-tint: rgba(131, 195, 173, 0.15); --accent-tint2: rgba(131, 195, 173, 0.09);
           --elder-bubble: #2a2820; --neutral-tint: rgba(255, 255, 255, 0.06);
           --scroll: #3c382f;
-          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -14px rgba(0, 0, 0, 0.65);
           --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+          --shadow-float: 0 2px 6px rgba(0, 0, 0, 0.35), 0 24px 54px -18px rgba(0, 0, 0, 0.72);
         }
       }
       * { box-sizing: border-box; }
@@ -45,7 +50,7 @@
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
           "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-        background: var(--bg); color: var(--ink);
+        background: var(--canvas); color: var(--ink);
         -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
       }
       button { font-family: inherit; cursor: pointer; color: inherit; }
@@ -55,45 +60,14 @@
       ::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
       ::-webkit-scrollbar-track { background: transparent; }
 
-      .app { display: flex; height: 100dvh; overflow: hidden; }
+      /* 对话区为底,两张卡片悬浮其上;无任何分界直线 */
+      .app { position: relative; height: 100dvh; overflow: hidden; background: var(--canvas); }
 
-      /* ---------- Sidebar ---------- */
-      .sidebar { width: 284px; flex: none; background: var(--bg); display: flex; flex-direction: column; border-right: 1px solid var(--line); }
-      .sb-head { display: flex; align-items: center; gap: 10px; padding: 18px 18px 6px; }
-      .mark { width: 28px; height: 28px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--accent-fill); color: var(--on-accent); }
-      .brand { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
-      .badge-static { display: inline-block; margin-left: 6px; border-radius: 999px; background: var(--accent-tint); color: var(--accent); font-size: 10px; font-weight: 600; padding: 2px 7px; vertical-align: middle; letter-spacing: 0.02em; }
-      .sb-pad { padding: 10px 12px 0; }
-      .new-btn { display: flex; width: 100%; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--elev); padding: 10px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink); box-shadow: var(--shadow-sm); transition: box-shadow .2s, transform .05s; }
-      .new-btn:hover { box-shadow: var(--shadow); }
-      .new-btn:active { transform: translateY(1px); }
-      .new-btn .i { color: var(--accent); }
-      .sb-list { margin-top: 14px; flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
-      .grp { padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--faint); letter-spacing: 0.04em; }
-      .card { display: flex; align-items: flex-start; gap: 10px; border-radius: var(--r-card); padding: 10px 12px; margin-bottom: 3px; transition: background .15s; }
-      .card.active { background: var(--elev); box-shadow: var(--shadow-sm); }
-      .card .ci { color: var(--faint); margin-top: 1px; }
-      .card.active .ci { color: var(--accent); }
-      .card .ct { font-size: 13.5px; font-weight: 550; }
-      .card .cs { font-size: 12px; color: var(--muted); margin-top: 1px; }
-      .sb-note { border-radius: var(--r-sm); background: var(--neutral-tint); color: var(--muted); font-size: 11.5px; line-height: 1.65; padding: 10px 12px; margin: 4px 2px; }
-      .sb-foot { padding: 12px 20px; font-size: 11px; color: var(--faint); }
-
-      /* ---------- Main ---------- */
-      .main { display: flex; flex-direction: column; flex: 1; min-width: 0; background: var(--surface); }
-      .topbar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 12px 24px; }
-      .tt { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
-      .ts { font-size: 12px; color: var(--muted); margin-top: 1px; }
-      .cfg { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent; border-radius: var(--r-pill); padding: 6px 12px; font-size: 12px; color: var(--muted); transition: background .15s; }
-      .cfg:hover { background: var(--neutral-tint); color: var(--ink); }
-      .cfg .i { color: var(--accent); }
-      .body { display: flex; flex: 1; min-height: 0; }
-
-      /* ---------- Chat ---------- */
-      .chat { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-      .chat-scroll { flex: 1; overflow-y: auto; padding: 28px 20px; }
+      /* ---------- 底层:对话区 ---------- */
+      .chat { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; }
+      .chat-scroll { flex: 1; overflow-y: auto; padding: 28px var(--pad-right) 10px var(--pad-left); transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
       .chat-inner { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
-      .empty { margin-top: 70px; text-align: center; color: var(--muted); }
+      .empty { margin-top: 68px; text-align: center; color: var(--muted); }
       .empty .mk { display: inline-grid; place-items: center; width: 60px; height: 60px; border-radius: 16px; background: var(--accent-tint); color: var(--accent); margin-bottom: 6px; }
       .empty-title { margin: 12px 0 0; font-size: 19px; font-weight: 650; color: var(--ink); letter-spacing: -0.01em; }
       .empty-sub { margin: 5px 0 0; font-size: 14px; }
@@ -116,18 +90,17 @@
       .chips-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 7px; }
       .chips-hint { font-size: 10.5px; font-weight: 500; color: var(--faint); }
       .chips-row { display: flex; flex-wrap: wrap; gap: 8px; }
-      .chip { border: 1px solid var(--line); background: var(--elev); color: var(--muted); border-radius: var(--r-pill); padding: 6px 13px; font-size: 13px; }
+      .chip { background: var(--neutral-tint); color: var(--muted); border-radius: var(--r-pill); padding: 6px 13px; font-size: 13px; }
 
-      /* 每段老人气泡下的推进控件 */
       .advance { margin-top: 14px; }
-      .adv-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--accent); background: var(--accent-tint); color: var(--accent); border-radius: var(--r-pill); padding: 8px 15px; font-size: 13px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, color .15s, transform .05s; }
+      .adv-btn { display: inline-flex; align-items: center; gap: 6px; border: none; background: var(--accent-tint); color: var(--accent); border-radius: var(--r-pill); padding: 8px 15px; font-size: 13px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, color .15s, transform .05s; }
       .adv-btn:hover { background: var(--accent-fill); color: var(--on-accent); }
       .adv-btn:active { transform: translateY(1px); }
       .advance.done { font-size: 12.5px; color: var(--faint); display: flex; align-items: center; gap: 6px; }
       .restart { border: none; background: transparent; color: var(--accent); font: inherit; font-weight: 650; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
 
-      /* ---------- 底部:持续聆听指示 ---------- */
-      .listen { border-top: 1px solid var(--line); padding: 15px 20px; display: flex; justify-content: center; }
+      /* 底部:持续聆听指示(随对话区居中于两卡片之间)*/
+      .listen { padding: 14px var(--pad-right) 20px var(--pad-left); display: flex; justify-content: center; transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
       .listen-inner { display: inline-flex; align-items: center; gap: 13px; }
       .listen .dot { position: relative; width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent); display: grid; place-items: center; }
       .listen .ping { position: absolute; inset: 0; border-radius: var(--r-pill); border: 2px solid var(--accent); animation: ping 1.9s cubic-bezier(0, 0, .2, 1) infinite; }
@@ -141,16 +114,46 @@
       .wave i:nth-child(4) { animation-delay: .54s; }
       .wave i:nth-child(5) { animation-delay: .72s; }
 
-      /* ---------- Timeline ---------- */
-      .timeline { width: 336px; flex: none; border-left: 1px solid var(--line); display: flex; flex-direction: column; }
-      .timeline.collapsed { width: 46px; align-items: center; padding-top: 14px; gap: 14px; cursor: pointer; color: var(--muted); }
-      .timeline.collapsed:hover { background: var(--neutral-tint); }
+      /* ---------- 悬浮卡片(左栏 / 右侧时间线共用外形)---------- */
+      .panel { position: absolute; top: 18px; bottom: 18px; z-index: 2; display: flex; flex-direction: column; background: var(--card); border-radius: var(--r-panel); box-shadow: var(--shadow-float); overflow: hidden; }
+      .panel-left { left: 18px; width: 292px; }
+      .panel-right { right: 18px; width: 344px; }
+
+      /* 左栏卡片 */
+      .panel-head { display: flex; align-items: center; gap: 10px; padding: 18px 18px 4px; }
+      .mark { width: 28px; height: 28px; border-radius: 9px; flex: none; display: grid; place-items: center; background: var(--accent-fill); color: var(--on-accent); }
+      .brand { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+      .badge-static { display: inline-block; margin-left: 6px; border-radius: 999px; background: var(--accent-tint); color: var(--accent); font-size: 10px; font-weight: 600; padding: 2px 7px; vertical-align: middle; letter-spacing: 0.02em; }
+      .panel-pad { padding: 12px 14px 0; }
+      .new-btn { display: flex; width: 100%; align-items: center; gap: 8px; border: none; border-radius: var(--r-pill); background: var(--neutral-tint); padding: 10px 16px; font-size: 13.5px; font-weight: 600; color: var(--ink); transition: background .15s, transform .05s; }
+      .new-btn:hover { background: var(--accent-tint); color: var(--accent); }
+      .new-btn:active { transform: translateY(1px); }
+      .new-btn .i { color: var(--accent); }
+      .panel-list { margin-top: 14px; flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px; }
+      .grp { padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--faint); letter-spacing: 0.04em; }
+      .card { display: flex; align-items: flex-start; gap: 10px; border-radius: var(--r-card); padding: 10px 12px; margin-bottom: 3px; transition: background .15s; }
+      .card.active { background: var(--accent-tint2); }
+      .card .ci { color: var(--faint); margin-top: 1px; }
+      .card.active .ci { color: var(--accent); }
+      .card .ct { font-size: 13.5px; font-weight: 550; }
+      .card.active .ct { color: var(--accent); }
+      .card .cs { font-size: 12px; color: var(--muted); margin-top: 1px; }
+      .sb-note { border-radius: var(--r-sm); background: var(--neutral-tint); color: var(--muted); font-size: 11.5px; line-height: 1.65; padding: 10px 12px; margin: 4px 2px; }
+      .panel-foot { padding: 12px; }
+      .cfg { display: flex; width: 100%; align-items: center; gap: 8px; border: none; background: var(--neutral-tint); color: var(--ink); border-radius: var(--r-pill); padding: 11px 16px; font-size: 13px; font-weight: 600; transition: background .15s, color .15s, transform .05s; }
+      .cfg:hover { background: var(--accent-tint); color: var(--accent); }
+      .cfg:active { transform: translateY(1px); }
+      .cfg .i { color: var(--accent); }
+      .panel-cap { margin-top: 9px; text-align: center; font-size: 11px; color: var(--faint); }
+
+      /* 右侧时间线卡片 */
+      .timeline.collapsed { bottom: auto; height: auto; width: 52px; border-radius: 16px; padding: 14px 0; align-items: center; gap: 14px; cursor: pointer; }
       .timeline.collapsed .tl-full { display: none; }
-      .tl-mini { display: none; flex-direction: column; align-items: center; gap: 12px; }
+      .tl-mini { display: none; flex-direction: column; align-items: center; gap: 12px; color: var(--muted); }
       .timeline.collapsed .tl-mini { display: flex; }
       .tl-vert { writing-mode: vertical-rl; font-size: 12px; letter-spacing: 0.08em; color: var(--faint); }
       .tl-full { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-      .tl-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; }
+      .tl-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px; }
       .tl-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 650; }
       .tl-title .i { color: var(--accent); }
       .tl-chev { border: none; background: transparent; color: var(--faint); border-radius: var(--r-pill); padding: 5px; display: grid; place-items: center; transition: background .15s; }
@@ -168,7 +171,7 @@
       .ev:last-child::before { display: none; }
       .period { display: inline-block; margin-bottom: 5px; border-radius: var(--r-pill); background: var(--neutral-tint); color: var(--muted); font-size: 11px; font-weight: 550; padding: 2px 9px; }
       .ev-desc { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
-      .threads { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+      .threads { margin-top: 16px; padding-top: 4px; }
       .threads-head { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 650; color: var(--muted); margin-bottom: 9px; }
       .thread { position: relative; border-radius: var(--r-sm); background: var(--neutral-tint); color: var(--ink); opacity: .82; font-size: 12px; line-height: 1.6; padding: 8px 12px 8px 24px; margin-bottom: 6px; }
       .thread::before { content: "?"; position: absolute; left: 10px; top: 8px; color: var(--accent); font-weight: 700; }
@@ -182,7 +185,7 @@
       /* 开场强制说明弹窗:一打开即显示,点「开始体验」才进入 */
       .intro { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 18, 16, 0.5); }
       .intro.hidden { display: none; }
-      .intro-card { max-width: 500px; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 30px; box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.4); animation: fadeUp .4s cubic-bezier(0.2, 0, 0, 1) both; }
+      .intro-card { max-width: 500px; width: 100%; background: var(--surface); border-radius: 20px; padding: 30px; box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.4); animation: fadeUp .4s cubic-bezier(0.2, 0, 0, 1) both; }
       .intro-mark { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
       .intro-mark .mk { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-fill); color: var(--on-accent); }
       .intro-mark .t { font-size: 13px; font-weight: 600; color: var(--muted); }
@@ -197,24 +200,47 @@
       .intro-ok:hover { background: var(--accent-strong); }
       .intro-ok:active { transform: translateY(1px); }
 
+      @media (max-width: 1120px) {
+        :root { --pad-left: 292px; --pad-right: 306px; }
+        .app.tl-collapsed { --pad-right: 96px; }
+        .panel-left { width: 250px; }
+        .panel-right { width: 268px; }
+      }
       @media (prefers-reduced-motion: reduce) {
         .fade, .note, .chips, .ev, .intro-card { animation: none !important; }
         .listen .ping, .wave i { animation: none !important; }
         .wave i { height: 11px; opacity: .8; }
+        .chat-scroll, .listen { transition: none !important; }
       }
     </style>
   </head>
   <body>
     <div class="app">
-      <aside class="sidebar">
-        <div class="sb-head">
+      <!-- 底层:对话区 -->
+      <main class="chat">
+        <div class="chat-scroll"><div class="chat-inner" id="messages"></div></div>
+        <div class="listen">
+          <div class="listen-inner">
+            <span class="dot"><span class="ping"></span><span class="i" data-icon="mic" data-size="18"></span></span>
+            <div class="listen-txt">
+              <div class="lt">正在聆听这场对话…</div>
+              <div class="ls">AI 边听边理解,自动整理时间线、补背景、想追问</div>
+            </div>
+            <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+        </div>
+      </main>
+
+      <!-- 悬浮卡片一:左栏(LLM 配置按钮在其底部)-->
+      <aside class="panel panel-left">
+        <div class="panel-head">
           <span class="mark" data-icon="sprout" data-size="17"></span>
           <div class="brand">代际记忆桥梁 <span class="badge-static">静态演示</span></div>
         </div>
-        <div class="sb-pad">
+        <div class="panel-pad">
           <button class="new-btn" onclick="reset()"><span class="i" data-icon="plus"></span> 新建会话</button>
         </div>
-        <div class="sb-list">
+        <div class="panel-list">
           <div class="grp">示例</div>
           <div class="card active">
             <span class="ci i" data-icon="sparkle"></span>
@@ -223,51 +249,29 @@
           <div class="grp" style="margin-top:14px">我的会话</div>
           <div class="sb-note">这是纯静态预览(离线流程)。真实多会话、语音输入与真实分析,请用完整项目(见 README)。</div>
         </div>
-        <div class="sb-foot">纯静态演示，双击即开</div>
-      </aside>
-
-      <div class="main">
-        <header class="topbar">
-          <div>
-            <div class="tt" id="top-title">大槐树的故事</div>
-            <div class="ts">长辈口述 · 边听边理解(纯静态预览)</div>
-          </div>
+        <div class="panel-foot">
           <button class="cfg" onclick="alert('完整项目中可在此配置模型 API Key(DeepSeek):支持不带 key 冷启动,界面里填入即用。此为纯静态演示,无需任何配置。')">
             <span class="i" data-icon="key"></span> 配置 LLM KEY
           </button>
-        </header>
-        <div class="body">
-          <section class="chat">
-            <div class="chat-scroll"><div class="chat-inner" id="messages"></div></div>
-            <!-- 底部:持续聆听指示(取代原输入框) -->
-            <div class="listen">
-              <div class="listen-inner">
-                <span class="dot"><span class="ping"></span><span class="i" data-icon="mic" data-size="18"></span></span>
-                <div class="listen-txt">
-                  <div class="lt">正在聆听这场对话…</div>
-                  <div class="ls">AI 边听边理解,自动整理时间线、补背景、想追问</div>
-                </div>
-                <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
-              </div>
-            </div>
-          </section>
-
-          <aside class="timeline" id="timeline">
-            <div class="tl-mini" onclick="toggleTimeline()">
-              <span class="i" data-icon="chevL"></span><span class="i" data-icon="clock"></span><span class="tl-vert">时间线</span>
-            </div>
-            <div class="tl-full">
-              <div class="tl-head">
-                <div class="tl-title"><span class="i" data-icon="clock"></span> 时间线 · 逻辑梳理</div>
-                <button class="tl-chev" title="收起" onclick="toggleTimeline()"><span class="i" data-icon="chevR"></span></button>
-              </div>
-              <div id="tl-era"></div>
-              <div class="tl-meta" id="tl-meta"></div>
-              <div class="tl-body" id="tl-body"></div>
-            </div>
-          </aside>
+          <div class="panel-cap">纯静态演示 · 双击即开</div>
         </div>
-      </div>
+      </aside>
+
+      <!-- 悬浮卡片二:右侧时间线 · 逻辑梳理 -->
+      <aside class="panel panel-right timeline" id="timeline">
+        <div class="tl-mini" onclick="toggleTimeline()">
+          <span class="i" data-icon="chevL"></span><span class="i" data-icon="clock"></span><span class="tl-vert">时间线</span>
+        </div>
+        <div class="tl-full">
+          <div class="tl-head">
+            <div class="tl-title"><span class="i" data-icon="clock"></span> 时间线 · 逻辑梳理</div>
+            <button class="tl-chev" title="收起" onclick="toggleTimeline()"><span class="i" data-icon="chevR"></span></button>
+          </div>
+          <div id="tl-era"></div>
+          <div class="tl-meta" id="tl-meta"></div>
+          <div class="tl-body" id="tl-body"></div>
+        </div>
+      </aside>
     </div>
 
     <!-- 开场强制说明弹窗:打开即显示,点「开始体验」后才进入 -->
@@ -297,7 +301,7 @@
       var steps = DATA.steps || [];
       var session = DATA.session || { title: '演示', elder_name: '老人' };
       var MODE_LABEL = { incremental: '增量更新', refine: '轻整理', full_rerun: '全量重跑' };
-      var cursor = 0, messages = [], msgId = 0, timelineCollapsed = false;
+      var cursor = 0, messages = [], timelineCollapsed = false;
 
       // ---- 内联 SVG 图标(0 依赖;stroke=currentColor)----
       var ICONS = {
@@ -308,7 +312,6 @@
         clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.9"/>',
         key: '<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M17 6l2.5 2.5M14 9l2 2"/>',
         mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/>',
-        send: '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
         arrowR: '<path d="M5 12h13M13 6l6 6-6 6"/>',
         chevL: '<path d="M15 6l-6 6 6 6"/>',
         chevR: '<path d="M9 6l6 6-6 6"/>',
@@ -326,7 +329,6 @@
       }
 
       document.getElementById('sb-title').textContent = session.title || '演示';
-      document.getElementById('top-title').textContent = session.title || '演示';
 
       function closeIntro() { document.getElementById('intro').classList.add('hidden'); }
 
@@ -409,6 +411,7 @@
       function toggleTimeline() {
         timelineCollapsed = !timelineCollapsed;
         document.getElementById('timeline').classList.toggle('collapsed', timelineCollapsed);
+        document.querySelector('.app').classList.toggle('tl-collapsed', timelineCollapsed);
       }
 
       renderIcons();
