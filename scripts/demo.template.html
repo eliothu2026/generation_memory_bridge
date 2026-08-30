@@ -373,7 +373,7 @@
         if (cursor >= steps.length) {
           return '<div class="advance done">这场讲述告一段落。<button class="restart" onclick="reset()">重新开始</button></div>';
         }
-        return '<div class="advance"><button class="adv-btn" onclick="next()">老人继续讲 ' + icon('arrowR', 15) + '</button></div>';
+        return '<div class="advance"><button class="adv-btn" onclick="next()">点击模拟老人讲述 ' + icon('arrowR', 15) + '</button></div>';
       }
 
       function elderHTML(m, isLast) {
@@ -479,7 +479,7 @@
         var left, top = r.top + 22;
         if (step.region === 'left') left = r.left + r.width + 22;
         else if (step.region === 'right') left = r.left - pw - 22;
-        else { left = r.left + (r.width - pw) / 2; top = r.top + r.height / 2 - 70; }
+        else { left = r.left + 16; top = r.top + 20; }
         pop.style.width = pw + 'px';
         pop.style.left = Math.max(12, Math.min(left, vw - pw - 12)) + 'px';
         pop.style.top = Math.max(12, Math.min(top, vh - 170)) + 'px';
