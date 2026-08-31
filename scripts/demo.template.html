@@ -106,13 +106,10 @@
       /* 底部录音区:终止(左) · 陪伴聆听开关(中) · 模拟老人讲述(右) */
       .listen { padding: 14px var(--pad-right) 20px var(--pad-left); display: flex; justify-content: center; transition: padding .28s cubic-bezier(0.2, 0, 0, 1); }
       .listen-bar { display: inline-flex; align-items: center; gap: 10px; }
-      .rec-btn { flex: none; width: 40px; height: 40px; border: none; border-radius: var(--r-pill); place-items: center; cursor: pointer; transition: background .15s, color .15s, transform .05s; }
-      .rec-btn:active { transform: translateY(1px); }
-      .rec-stop { display: none; background: var(--danger-tint); color: var(--danger); }
-      .listen.active .rec-stop { display: grid; }
-      .rec-play { display: grid; background: var(--accent-tint); color: var(--accent); }
+      .rec-play { flex: none; display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: var(--r-pill); background: var(--accent-tint); color: var(--accent); padding: 9px 16px 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s, transform .05s; }
       .rec-play:hover { background: var(--accent-fill); color: var(--on-accent); }
-      .rec-play.is-playing { opacity: .45; cursor: default; }
+      .rec-play:active { transform: translateY(1px); }
+      .rec-label { white-space: nowrap; }
       .listen-inner { display: inline-flex; align-items: center; gap: 13px; border: none; background: transparent; border-radius: var(--r-pill); padding: 8px 16px 8px 8px; cursor: pointer; transition: background .15s; }
       .listen-inner:hover { background: var(--neutral-tint); }
       .listen .dot { position: relative; width: 36px; height: 36px; flex: none; border-radius: var(--r-pill); background: var(--neutral-tint); color: var(--muted); display: grid; place-items: center; transition: background .18s, color .18s; }
@@ -216,6 +213,8 @@
       .intro-link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
       .intro-list { margin: 2px 0 12px; padding-left: 18px; }
       .intro-list li { margin-bottom: 5px; line-height: 1.7; }
+      .intro-pic { display: block; width: 100%; height: 168px; object-fit: cover; border-radius: 12px; margin: 0 0 16px; }
+      .intro-tagline { margin: 16px 0 0; color: var(--accent); font-weight: 600; line-height: 1.7; }
       .intro-ok { flex: none; display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent); padding: 11px 22px; font-size: 14px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, transform .05s; }
       .intro-ok:hover { background: var(--accent-strong); }
       .intro-ok:active { transform: translateY(1px); }
@@ -258,7 +257,6 @@
         <div class="chat-scroll"><div class="chat-inner" id="messages"></div></div>
         <div class="listen" id="listen">
           <div class="listen-bar" id="listen-bar">
-            <button class="rec-btn rec-stop" id="rec-stop" title="终止" onclick="stopCompanion()"><span class="i" data-icon="stop" data-size="18"></span></button>
             <button class="listen-inner" onclick="toggleListen()" aria-label="开启 / 关闭 AI 陪伴聆听">
               <span class="dot"><span class="ping"></span><span class="i" id="dot-ic" data-icon="mic" data-size="18"></span></span>
               <div class="listen-txt">
@@ -267,7 +265,10 @@
               </div>
               <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
             </button>
-            <button class="rec-btn rec-play" id="rec-play" title="模拟老人讲述" onclick="playNarration()"><span class="i" data-icon="play" data-size="18"></span></button>
+            <button class="rec-play" id="rec-play" title="模拟老人讲述" onclick="playPause()">
+              <span class="i" id="rec-play-ic" data-icon="play" data-size="18"></span>
+              <span class="rec-label" id="rec-label">点此模拟老人的讲述</span>
+            </button>
           </div>
         </div>
       </main>
@@ -323,6 +324,7 @@
         </div>
 
         <div class="intro-page" id="intro-p1">
+          <img class="intro-pic" src="__STARTUP_PIC__" alt="代际记忆桥梁" />
           <h2 class="intro-h">关于这个产品</h2>
           <div class="intro-body">
             <p><b>代际记忆桥梁</b>是一个"边听边理解"的 AI 倾听者:陪长辈口述家族往事时,在他们讲述的<b>同时</b>,把零散、跳跃的回忆一点点整理清楚。</p>
@@ -334,6 +336,7 @@
               <li><b>还原记忆画面</b>——把反复提到的老物件逐步描绘出来。</li>
             </ul>
             <p>市面上的转写工具只解决"记录",这里想补上"<b>理解</b>":让珍贵却易流失的长辈记忆,沉淀成一场更有温度的祖孙对话。</p>
+            <p class="intro-tagline">Agent 可以不只是效率工具,也可以是人之间互相理解的桥梁。</p>
           </div>
         </div>
 
@@ -386,6 +389,7 @@
         mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0M12 17.5V21"/>',
         stop: '<rect x="6" y="6" width="12" height="12" rx="2.5"/>',
         play: '<path d="M8 5v14l11-7z"/>',
+        pause: '<rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/>',
         arrowR: '<path d="M5 12h13M13 6l6 6-6 6"/>',
         panelR: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M14 5v14"/><path d="M6 9.5l2.5 2.5-2.5 2.5"/>',
         panelL: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 5v14"/><path d="M17 9.5l-2.5 2.5 2.5 2.5"/>',
@@ -417,6 +421,14 @@
         document.getElementById('intro-primary').innerHTML = (n === 1 ? '下一页 ' : '开始体验 ') + icon('arrowR');
       }
       function introPrimary() { if (introPageNum === 1) introPage(2); else closeIntro(); }
+      // 两页等高:取两页较高者,给两页设同一 min-height,切换不跳动
+      function equalizeIntro() {
+        var p1 = document.getElementById('intro-p1'), p2 = document.getElementById('intro-p2');
+        var wasHidden = p2.hidden; p2.hidden = false;
+        var m = Math.max(p1.offsetHeight, p2.offsetHeight);
+        p2.hidden = wasHidden;
+        p1.style.minHeight = m + 'px'; p2.style.minHeight = m + 'px';
+      }
 
       function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -498,37 +510,40 @@
         document.querySelector('.app').classList.toggle('tl-collapsed', timelineCollapsed);
       }
 
-      // 底部录音区:陪伴聆听开关(中)+ 模拟老人讲述自动流式(右)+ 终止(左)
+      // 底部录音区:陪伴聆听开关(中)+ 模拟老人讲述 播放/暂停(右)
       var listening = false, streaming = false, thinking = false, streamTimer = null;
-      function toggleListen() { if (listening) stopCompanion(); else { listening = true; renderListen(); } }
       function renderListen() {
         document.getElementById('listen').classList.toggle('active', listening);
         document.getElementById('listen-lt').textContent = listening ? '正在聆听这场对话' : '点击开启 AI 陪伴聆听';
       }
-      function playNarration() {
+      function renderPlayBtn() {
+        document.getElementById('rec-play-ic').innerHTML = icon(streaming ? 'pause' : 'play', 18);
+        document.getElementById('rec-label').textContent = streaming ? '正在模拟老人讲述…' : '点此模拟老人的讲述';
+      }
+      function toggleListen() {
+        if (listening) { pauseStream(); listening = false; renderListen(); }
+        else { listening = true; renderListen(); }
+      }
+      function playPause() {
         if (!listening) { alert('请先点击中间的麦克风,开启 AI 陪伴聆听状态,才能模拟老人讲述。'); return; }
-        if (streaming) return;
-        if (cursor >= steps.length) reset();            // 已讲完则从头重新开始
-        streaming = true;
-        document.getElementById('rec-play').classList.add('is-playing');
-        streamStep();
+        if (streaming) { pauseStream(); return; }           // 播放中 → 暂停
+        if (cursor >= steps.length) reset();                // 已讲完 → 从头重播
+        streaming = true; renderPlayBtn(); streamStep();
+      }
+      function pauseStream() {
+        streaming = false; thinking = false;
+        if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
+        renderPlayBtn(); renderMessages();
       }
       function streamStep() {
         if (!streaming) return;
-        if (cursor >= steps.length) { streaming = false; thinking = false; document.getElementById('rec-play').classList.remove('is-playing'); renderMessages(); return; }
-        thinking = true; renderMessages();              // 段间显示「正在识别和理解…」
+        if (cursor >= steps.length) { streaming = false; thinking = false; renderPlayBtn(); renderMessages(); return; }
+        thinking = true; renderMessages();                  // 段间显示「正在识别和理解…」
         streamTimer = setTimeout(function () {
           if (!streaming) return;
-          thinking = false; next();                     // 揭示下一段老人发言(next 内部会重渲染)
-          streamStep();                                 // 继续流出
+          thinking = false; next();                         // 揭示下一段老人发言
+          streamStep();                                     // 继续流出
         }, 2000);
-      }
-      function stopCompanion() {
-        streaming = false; thinking = false;
-        if (streamTimer) { clearTimeout(streamTimer); streamTimer = null; }
-        listening = false;
-        document.getElementById('rec-play').classList.remove('is-playing');
-        renderListen(); renderMessages();
       }
 
       // 开屏引导:左→中→右,高亮当前区域、压暗其余,「我知道了」推进/完成
@@ -578,7 +593,8 @@
       });
 
       renderIcons();
-      renderMessages(); renderTimeline(); renderListen();
+      equalizeIntro();
+      renderMessages(); renderTimeline(); renderListen(); renderPlayBtn();
     </script>
   </body>
 </html>
