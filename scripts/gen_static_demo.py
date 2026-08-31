@@ -9,12 +9,14 @@
 
 from __future__ import annotations
 
+import base64
 import json
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = REPO_ROOT / "scripts" / "demo.template.html"
 DEMO_JSON = REPO_ROOT / "frontend" / "public" / "demo_script.json"
+PIC = REPO_ROOT / "scripts" / "startup_pic.jpg"
 OUT = REPO_ROOT / "静态demo_快速体验.html"
 PLACEHOLDER = "__DEMO_DATA__"
 
@@ -26,7 +28,16 @@ def main() -> None:
     inline = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     if PLACEHOLDER not in template:
         raise SystemExit(f"模板缺少占位符 {PLACEHOLDER}")
-    OUT.write_text(template.replace(PLACEHOLDER, inline), encoding="utf-8")
+    html = template.replace(PLACEHOLDER, inline)
+    # 内联启动图(压缩版 JPEG → data URI),保持 0 依赖单文件
+    if "__STARTUP_PIC__" in html:
+        if PIC.exists():
+            b64 = base64.b64encode(PIC.read_bytes()).decode("ascii")
+            html = html.replace("__STARTUP_PIC__", "data:image/jpeg;base64," + b64)
+        else:
+            html = html.replace("__STARTUP_PIC__", "")
+            print(f"⚠️  未找到 {PIC.name},启动图占位已置空")
+    OUT.write_text(html, encoding="utf-8")
 
     kb = OUT.stat().st_size / 1024
     print(f"✅ 写出 {OUT.relative_to(REPO_ROOT)}  ({kb:.1f} KB, 内联 {len(data['steps'])} 步)")
