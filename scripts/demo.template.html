@@ -213,7 +213,7 @@
       .intro-link { color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; word-break: break-all; }
       .intro-list { margin: 2px 0 12px; padding-left: 18px; }
       .intro-list li { margin-bottom: 5px; line-height: 1.7; }
-      .intro-pic { display: block; width: 100%; height: 168px; object-fit: cover; border-radius: 12px; margin: 0 0 16px; }
+      .intro-pic { display: block; width: 100%; height: 168px; background: url('__STARTUP_PIC__') center / cover no-repeat; border-radius: 12px; margin: 0 0 16px; }
       .intro-tagline { margin: 16px 0 0; color: var(--accent); font-weight: 600; line-height: 1.7; }
       .intro-ok { flex: none; display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: var(--r-pill); background: var(--accent-fill); color: var(--on-accent); padding: 11px 22px; font-size: 14px; font-weight: 650; box-shadow: var(--shadow-sm); transition: background .15s, transform .05s; }
       .intro-ok:hover { background: var(--accent-strong); }
@@ -324,28 +324,29 @@
         </div>
 
         <div class="intro-page" id="intro-p1">
-          <img class="intro-pic" src="__STARTUP_PIC__" alt="代际记忆桥梁" />
+          <div class="intro-pic" role="img" aria-label="代际记忆桥梁"></div>
           <h2 class="intro-h">关于这个产品</h2>
           <div class="intro-body">
-            <p><b>代际记忆桥梁</b>是一个"边听边理解"的 AI 倾听者:陪长辈口述家族往事时,在他们讲述的<b>同时</b>,把零散、跳跃的回忆一点点整理清楚。</p>
-            <p>它会实时并行做几件事:</p>
+            <p><b>代际记忆桥梁</b>是一个“边听边理解”的 AI 倾听者：陪长辈口述家族往事时，在他们讲述的<b>同时</b>，把零散、跳跃的回忆一点点整理清楚。</p>
+            <p>它会实时并行做几件事：</p>
             <ul class="intro-list">
-              <li><b>梳理时间线</b>——把跳来跳去的讲述重建成有先后、有因果的脉络;</li>
-              <li><b>补全时代背景</b>——从只言片语推断年代与社会背景,并由考据环节核实;</li>
-              <li><b>建议追问</b>——替年轻人想一两个具体问题,让对话不冷场;</li>
+              <li><b>梳理时间线</b>——把跳来跳去的讲述重建成有先后、有因果的脉络；</li>
+              <li><b>补全时代背景</b>——从只言片语推断年代与社会背景，并由考据环节核实；</li>
+              <li><b>建议追问</b>——替年轻人想一两个具体问题，让对话不冷场；</li>
               <li><b>还原记忆画面</b>——把反复提到的老物件逐步描绘出来。</li>
             </ul>
-            <p>市面上的转写工具只解决"记录",这里想补上"<b>理解</b>":让珍贵却易流失的长辈记忆,沉淀成一场更有温度的祖孙对话。</p>
-            <p class="intro-tagline">Agent 可以不只是效率工具,也可以是人之间互相理解的桥梁。</p>
+            <p>市面上的转写工具只解决“记录”，这里想补上“<b>理解</b>”：让珍贵却易流失的长辈记忆，沉淀成一场更有温度的祖孙对话。</p>
+            <p class="intro-tagline">Agent 可以不只是效率工具，也可以是人之间互相理解的桥梁。</p>
           </div>
         </div>
 
         <div class="intro-page" id="intro-p2" hidden>
+          <div class="intro-pic" role="img" aria-label="代际记忆桥梁"></div>
           <h2 class="intro-h">关于这个 demo</h2>
           <div class="intro-body">
-            <p>这是一个<b>无后端、未调用任何 LLM Key</b> 的纯 HTML demo,仅用于演示前端交互。</p>
-            <p>完整版项目支持真实多会话(持久化)、真实 DeepSeek 分析、录音上传与实时麦克风语音输入、模型热配置等。</p>
-            <p>详见:<a class="intro-link" href="https://github.com/eliothu2026/generation_memory_bridge" target="_blank" rel="noopener">github.com/eliothu2026/generation_memory_bridge</a></p>
+            <p>这是一个<b>无后端、未调用任何 LLM Key</b> 的纯 HTML demo，仅用于演示前端交互。</p>
+            <p>完整版项目支持真实 agent 能力、语音监听、模型配置等功能。</p>
+            <p>详见：<a class="intro-link" href="https://github.com/eliothu2026/generation_memory_bridge" target="_blank" rel="noopener">github.com/eliothu2026/generation_memory_bridge</a></p>
           </div>
         </div>
 
@@ -548,9 +549,9 @@
 
       // 开屏引导:左→中→右,高亮当前区域、压暗其余,「我知道了」推进/完成
       var OB_STEPS = [
-        { region: 'left',  text: '这里是你的会话区:管理会话记录、配置 LLM Key;点每条会话右侧的分享按钮,还能把整理好的回忆导出为 .md。' },
-        { region: 'mid',   text: '中间是对话区:长辈的讲述会在这里逐段呈现,AI 会实时在气泡下补充历史背景、推荐可以接着问的问题。' },
-        { region: 'rec',   text: '底部是录音区。点击麦克风即可进入 AI 陪伴(监听)状态,开始这场对话的实时聆听与整理。' },
+        { region: 'left',  text: '这里是你的会话区：管理会话记录、配置 LLM Key；点每条会话右侧的分享按钮，还能把整理好的回忆导出为 .md。让回忆变成任何 agent 的上下文，拓展更多可能。' },
+        { region: 'mid',   text: '中间是对话区：长辈的讲述会在这里逐段呈现，AI 会实时在气泡下补充历史背景、推荐可以接着问的问题。' },
+        { region: 'rec',   text: '底部是录音区。点击麦克风即可进入 AI 陪伴（监听）状态，开始这场对话的实时聆听与整理。' },
         { region: 'right', text: '右侧会实时展示 AI 为你梳理出的时间线与逻辑脉络。' }
       ];
       var obIndex = 0;
