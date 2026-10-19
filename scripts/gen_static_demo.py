@@ -1,6 +1,6 @@
-"""把 demo 数据内联进静态模板,生成 0 依赖、可双击打开的 静态demo_快速体验.html。
+"""把 demo 数据内联进静态模板,生成 0 依赖、可双击打开的 记忆桥_纯前端演示demo_web端.html。
 
-产物 静态demo_快速体验.html 完全自包含:数据内联(不 fetch)、无 CDN、无构建、无后端——
+产物 记忆桥_纯前端演示demo_web端.html 完全自包含:数据内联(不 fetch)、无 CDN、无构建、无后端——
 镜像完整前端的"离线大槐树"流程,给人在装完整项目前先快速感受交互。
 
 依赖 frontend/public/demo_script.json(由 scripts/gen_demo_script.py 生成)。
@@ -17,7 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = REPO_ROOT / "scripts" / "demo.template.html"
 DEMO_JSON = REPO_ROOT / "frontend" / "public" / "demo_script.json"
 PIC = REPO_ROOT / "scripts" / "startup_pic.jpg"
-OUT = REPO_ROOT / "静态demo_快速体验.html"
+OUT = REPO_ROOT / "记忆桥_纯前端演示demo_web端.html"
 PLACEHOLDER = "__DEMO_DATA__"
 
 

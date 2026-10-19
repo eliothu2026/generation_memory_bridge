@@ -12,7 +12,7 @@
 
 > ### 🚀 30 秒先睹为快(无需安装)
 > 在跑完整项目之前,想先感受一下使用流程?**直接用浏览器打开仓库根目录的
-> [`记忆桥_纯前端展示demo_web端.html`](记忆桥_纯前端演示demo_web端.html)** 即可——纯静态、**0 依赖**(数据内联,无需 npm / 后端 / 网络),
+> [`记忆桥_纯前端演示demo_web端.html`](./记忆桥_纯前端演示demo_web端.html)** 即可——纯静态、**0 依赖**(数据内联,无需 npm / 后端 / 网络),
 > 与真实前端**同款设计与交互**:逐段点「老人继续讲」,看右侧时间线实时生长、老人气泡下自动
 > 挂出「AI 背景补充」与「追问建议」,还能扮演孙辈发言。觉得对味,再按下方「快速开始」上手完整版。
 
@@ -124,16 +124,23 @@ python -m narrator_flow.streaming_app.run_stream --audio 你的录音.wav --asr-
 > 两件事——音频转文字这步不花钱，但把文字喂进三条流水线分析仍需配置 key。
 > 在 Streamlit 的「🎙️ 音频上传」模式里，可以先看到 ASR 转写全文，再逐段触发分析。
 
+> ☁️ 不想用本地模型？Web 端可在 ⚙️ 配置里切到**云端 ASR**（StepFun StepAudio 3 / 任意 OpenAI 兼容
+> 接口），详见文末「技术细节 → ASR 配置」。
+
 ---
 
-## 🖥️ Web 演示前端（Gemini 风格 · 会话优先）
+## 🖥️ Web 演示前端（Forest 风格 · 会话优先）
 
 面向**产品演示**的正式前端（React + Vite + TypeScript + Tailwind），区别于下方偏工程的 Streamlit 调试界面。
+**视觉与静态 demo 同源**：暖纸画布为底、左右两张悬浮圆角卡片（左＝会话列表、右＝实时时间线）、去分界线、
+深绿强调色、暗色模式随系统翻转。
+
 布局:左侧**真实会话列表**（新建 / 切换 / 删除，持久化于后端 SQLite）、中间祖孙双人对话（老人转写在左、
 孙辈发言在右）、右侧可收起的实时时间线；**史实补充与交互提醒逐段挂在对应的老人气泡下**
-（明确标注「AI 背景补充，非老人原话」）。
+（明确标注「AI 背景补充，非老人原话」）。底部**「开启 AI 陪伴聆听」是一等入口**（点一下即开始实时转写，
+带 ping 扩散与声波动效）；老人说完一段、结果还没回来时，对话流里会挂「正在识别和理解…」占位气泡。
 
-> 💡 只想快速感受交互?不必装下面这些——直接打开根目录 [`静态demo_快速体验.html`](./静态demo_快速体验.html)(0 依赖静态版)。
+> 💡 只想快速感受交互?不必装下面这些——直接打开根目录 [`记忆桥_纯前端演示demo_web端.html`](./记忆桥_纯前端演示demo_web端.html)(0 依赖静态版)。
 
 **离线示例(默认、0 后端、免 key):** 侧栏置顶的「大槐树的故事」是本地回放,逐段点「老人继续讲 ▶」
 即可看到右侧时间线与气泡下补充**实时填充**、点追问建议一键填入、扮演孙辈发言。
@@ -146,18 +153,23 @@ cd frontend && npm install && npm run dev    # 浏览器打开 http://127.0.0.1:
 > 🇨🇳 国内 `npm install` 卡住?加镜像(只需一次):`npm install --registry=https://registry.npmmirror.com`
 
 **实时会话(接真实分析、持久化):** 点侧栏「新建会话」开一条真实会话,连 FastAPI + WebSocket、用真实
-DeepSeek 分析,结果存 SQLite(刷新页面 / 重启后端仍在)。一条会话里可随时切**输入方式**:💬 文字(以老人 / 孙辈
-身份)、🎙️ 录音上传、🎤 实时麦克风——音频经 faster-whisper 转写后走**背压合并队列 + worker** 分析。
+DeepSeek 分析,结果存 SQLite(刷新页面 / 重启后端仍在)。底部主按钮是**「开启 AI 陪伴聆听」**(实时麦克风,
+每 ~4s 自动切段),「文字 / 上传录音」是旁边的次入口——音频转写后走**背压合并队列 + worker** 分析。
 
 ```bash
 export DEEPSEEK_API_KEY=sk-...               # 或在界面右上角 ⚙️ 热配置(后端可不带 key 冷启动)
-pip install -e ".[web,asr]"                  # web=服务化;asr=音频转写(faster-whisper)
+pip install -e ".[web,asr]"                  # web=服务化;asr=本地音频转写(faster-whisper)
 uvicorn narrator_flow.server.app:app         # 默认 http://127.0.0.1:8000,前端经 Vite 代理连它
 ```
 
-> ⚙️ **热配置**:右上角「配置」可直接填 / 改模型 API Key 与 Base URL(仅存后端进程内存、不落盘),保存后
-> 自动重连——因此后端可**不带 key 冷启动**,界面里配好即用。
+> 后端端口被占用时,可换端口并让前端改指向:`API_TARGET=http://localhost:8010 npm run dev`
+> (Vite 代理读 `API_TARGET`,默认 `http://localhost:8000`)。
+
+> ⚙️ **热配置**:右上角「配置」可直接填 / 改 LLM 的 API Key、Base URL 与 **ASR(本地 / 云端)**(仅存后端
+> 进程内存、不落盘),保存后自动重连——因此后端可**不带 key 冷启动**,界面里配好即用。
 > 🎤 麦克风(getUserMedia)需"安全上下文":请用 `http://127.0.0.1:5173` 或 `localhost` 打开,勿用局域网 IP。
+> 🔊 浏览器录音是 webm/opus,而云端 ASR 普遍不收 webm——前端会先用 Web Audio 转成 **16kHz 单声道 WAV**
+> 再上传(因此无需 ffmpeg)。
 
 ---
 
@@ -292,6 +304,9 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
   情感共情型与"音频情绪感知"留待后续
 - ✅ **实时语音输入 · Web 端已落地**：Web 会话内 🎙️ 录音上传 / 🎤 实时麦克风 → faster-whisper
   转写 → 背压合并队列 → 真实分析(阶段1 切句 + 阶段2 分析接入已通);阶段3 说话人分离见下条
+- ✅ **ASR 可换供应商（已完成）**：配置里可切「本地 faster-whisper」/「云端 API」；云端按 base_url
+  自动判协议——StepFun 走 SSE（`POST /v1/audio/asr/sse`，模型 `stepaudio-3-asr-max`），其他走 OpenAI
+  兼容的 `/audio/transcriptions`。浏览器录音先转 16kHz WAV，绕开「云端不收 webm」
 - **🎙️ 说话人分离（speaker diarization）**：当前 ASR（Whisper）只产出**一条不分人的
   文字流**，分不清"长辈叙述"与"年轻人提问"——这在双人对话+追问场景下会污染分析。
   需引入 whisperx/pyannote（受 HF 访问限制），或在产品上把两人输入分通道处理
@@ -302,10 +317,16 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
   `openai + httpx`。整个项目不再依赖任何 agent 框架
 - **🎨 接入真实生图模型**（DALL·E / Stable Diffusion 等），替换当前的 stub
 - ✅ **服务化 + Web 前端**（已完成）：FastAPI + WebSocket 后端 + 会话优先的 React 前端
-  （多会话持久化于 SQLite、⚙️ 模型 key 热配置、会话内切换 文字 / 录音 / 麦克风 输入）;
-  另含 0 依赖静态演示 `静态demo_快速体验.html`(双击即开)
+  （多会话持久化于 SQLite、⚙️ LLM / ASR 热配置、底部「陪伴聆听」一等入口）;
+  另含 0 依赖静态演示 `记忆桥_纯前端演示demo_web端.html`(双击即开)
+- ✅ **⏳ 分析过程的实时反馈（已完成）**：老人说完一段、结果未回时，对话流里挂「正在识别和理解…」
+  占位气泡（三点跳动 + 预计时长提示），把 1–2 分钟的等待翻译成可见的处理态
+- ✅ **🎙️ "陪伴聆听"一等入口（已完成）**：底部主按钮「开启 AI 陪伴聆听」，聆听态带 ping 扩散圈 + 声波；
+  文字 / 上传录音降为次入口，不再把「说话」藏在三选一里
+- ✅ **🎨 前端视觉对齐（已完成）**：Forest 配色、单拱 logo、对话区为底 + 左右悬浮卡片、去分界线、
+  `prefers-reduced-motion`、暗色模式，均已回流到 `frontend/`
 
-<!-- 以下由「静态 demo」先行验证、正式前端(frontend/)尚未跟进,列为下次开发备忘 -->
+<!-- 以下仍待做，列为下次开发备忘 -->
 - **🧭 首次使用引导（onboarding）**：静态 demo 已示范"左 → 中 → 右"分区聚光引导（左＝管理会话 +
   配置 LLM Key、中＝点击底部按钮开启"陪伴聆听"、右＝实时时间线），以「我知道了」逐步推进；
   正式前端（`frontend/`）**尚未实现**。
@@ -325,15 +346,6 @@ state」。所以"记忆"就体现在——**每段分析都基于之前所有�
     实现「换个工具继续追问」。
   - **持久的「记忆伙伴」**：由记忆包生成可被其他应用消费的长辈 persona / 记忆卡，让「数字记忆伙伴」
     能以了解其生平的口吻回答与陪伴。
-- **⏳ 分析过程的实时反馈（流式「识别 / 理解中」占位）**：demo 在每段之间显示「正在识别和理解…」+ 动态
-  loading，模拟"边听边理解"的处理过程。真实分析每段需 1–2 分钟，正式前端可借鉴这种**逐段处理态占位**，
-  提升"正在为你整理"的感知响应（呈现 / 体验增强）。
-- **🎙️ "陪伴聆听"一等入口（呈现增强）**：demo 把底部做成"点一下开始陪伴 / 正在聆听"的单一开关
-  （含聆听态动效、模拟讲述的播放 / 暂停）。正式前端**已支持**实时麦克风，但放在"文字 / 上传 / 麦克风"三选一里；
-  可考虑把它提升为更醒目的常驻"陪伴模式"（能力已在，差在呈现）。
-- **🎨 前端视觉对齐（设计项，非功能缺口）**：把静态 demo 打磨过的观感（Forest 配色、单拱 logo、
-  对话区为底 + 左右悬浮卡片、去分界线、内联 SVG 图标 + `prefers-reduced-motion`）回流到正式前端，
-  保持两端一致。
 
 ---
 
@@ -352,7 +364,8 @@ generation_memory_bridge/
 │   │   ├── session.py          # NarratorSession(CLI/GUI 同步封装)
 │   │   ├── replay.py           # 免 key 回放(不调 LLM)
 │   │   ├── coalescing_queue.py · worker.py · producer.py  # 合并队列(背压)/ 消费 / 模拟 ASR
-│   │   ├── asr.py              # 真实 ASR:faster-whisper(音频→文字)
+│   │   ├── asr.py              # 本地 ASR:faster-whisper(音频→文字)
+│   │   ├── asr_cloud.py        # 云端 ASR:StepFun SSE / OpenAI 兼容(按 base_url 自动判协议)
 │   │   ├── llm_client.py · wikipedia_tool.py · fact_checker.py  # LLM 客户端 / 维基 / 考据 agent
 │   │   ├── session_store.py    # 会话状态存储(内存 / SQLite)
 │   │   └── run_stream.py       # 流式运行时 CLI
@@ -360,11 +373,13 @@ generation_memory_bridge/
 │       ├── app.py              # 多会话 REST + 统一会话 WS(文字/音频 → 背压 → 分析)
 │       └── store.py            # WebSessionStore:会话持久化(SQLite)
 ├── frontend/                                           # 会话优先 Web 前端(React + Vite + TS + Tailwind)
+│   ├── src/components/         # 侧栏 / 对话 / 时间线 / 输入器(陪伴聆听) / 配置弹窗
+│   └── src/lib/wav.ts          # 浏览器录音 → 16kHz WAV(云端 ASR 不收 webm,后端也无 ffmpeg)
 ├── scripts/
 │   ├── gen_demo_script.py      # 合成离线 demo 数据(transcript + replay → demo_script.json)
-│   └── gen_static_demo.py      # 生成 0 依赖静态演示 → 静态demo_快速体验.html
+│   └── gen_static_demo.py      # 生成 0 依赖静态演示 → 记忆桥_纯前端演示demo_web端.html
 ├── tests/                      # 免 key 单元测试(pytest);.github/workflows/ CI
-├── 静态demo_快速体验.html       # 0 依赖静态演示(双击即开)
+├── 记忆桥_纯前端演示demo_web端.html  # 0 依赖静态演示(双击即开)
 └── data/  ·  docs/  ·  .env.example  ·  README.md
 ```
 
@@ -387,6 +402,41 @@ OpenAI 兼容接口）：
 - `run_tool_loop(messages, tools, tool_impls)`：agentic 的工具调用循环（考据 agent 用）。
 
 切到 OpenAI：把 base_url/模型换成 OpenAI 的、并设 `OPENAI_API_KEY` 即可。
+</details>
+
+<details>
+<summary><b>ASR 配置（本地 faster-whisper / 云端 API 可切）</b></summary>
+
+两档，在界面右上角 ⚙️「配置 → 语音识别 · ASR」切换（仅写后端进程内存，不落盘）：
+
+**本地 · faster-whisper（默认，离线免 key）**
+- 可选 `tiny / base / small / medium / large-v3`，默认 `small`。
+- 首次使用需联网下载模型；国内网络先 `export HF_ENDPOINT=https://hf-mirror.com`。
+- 需安装可选依赖：`pip install -e ".[asr]"`。
+
+**云端 · API（按量计费，通常更准更快）**
+- 按 `base_url` 自动判协议：
+  - 含 `stepfun` → StepFun **SSE**：`POST /v1/audio/asr/sse`，模型 `stepaudio-3-asr-max`
+    （另支持 `stepaudio-2.5-asr` / `stepaudio-2-asr-pro`）；base64 提交音频，SSE 返回
+    `transcript.text.delta` 增量与 `transcript.text.done` 全文。
+  - 其他 → OpenAI 兼容 `POST /audio/transcriptions`（multipart），如 OpenAI `whisper-1`。
+- Step 音频容器支持 ogg / mp3 / wav / m4a / pcm（**不收 webm**），计费 2.8 元/小时。
+- 想强制协议（自建代理等）：`export ASR_PROTOCOL=step|openai`。
+
+**音频链路**：浏览器 `MediaRecorder` 产出 webm/opus → 前端用 Web Audio 解码、下混单声道、
+重采样 16kHz、编码 PCM16 WAV → 每 4s 片段上传。因此**不需要 ffmpeg**，本地与云端都能直接吃。
+
+**两种配置方式**：界面 ⚙️；或直接打接口（同样只存内存）：
+
+```bash
+curl -X POST http://localhost:8000/api/config \
+  -H 'Content-Type: application/json' \
+  -d '{"asr_provider":"cloud","asr_base_url":"https://api.stepfun.com/v1",
+       "asr_model":"stepaudio-3-asr-max","asr_api_key":"sk-..."}'
+```
+
+对应环境变量：`ASR_PROVIDER` / `ASR_MODEL` / `ASR_BASE_URL` / `ASR_API_KEY`
+（`GET /api/config` 返回 `asr_provider` / `asr_model` / `asr_base_url` / `asr_has_key`，不回传明文）。
 </details>
 
 <details>
