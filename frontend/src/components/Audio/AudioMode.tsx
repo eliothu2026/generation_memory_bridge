@@ -68,15 +68,15 @@ export default function AudioMode({ onOpenSettings }: { onOpenSettings?: () => v
   if (phase === 'idle') {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
-        <label className="flex w-full max-w-md cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/10 bg-surface px-6 py-12 text-center transition hover:border-accent/40">
+        <label className="flex w-full max-w-md cursor-pointer flex-col items-center gap-3 rounded-card border-2 border-dashed border-ink/10 bg-elev px-6 py-12 text-center transition hover:border-accent/40">
           <div className="text-4xl">🎙️</div>
           <div className="text-sm font-medium text-ink">上传一段长辈口述录音</div>
           <div className="text-xs leading-relaxed text-subtle">
             faster-whisper 转写 → 背压合并队列 → 真实分析
             <br />
-            需后端已启动、配 DEEPSEEK_API_KEY,且 <code className="rounded bg-slate-100 px-1">pip install -e ".[asr]"</code>
+            需后端已启动、配 DEEPSEEK_API_KEY,且 <code className="rounded bg-ink/5 px-1">pip install -e ".[asr]"</code>
           </div>
-          <span className="mt-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white">选择音频文件</span>
+          <span className="mt-2 rounded-full bg-accent-fill px-4 py-2 text-sm font-medium text-on-accent">选择音频文件</span>
           <input
             type="file"
             accept="audio/*,.wav,.mp3,.m4a,.aiff"
@@ -98,9 +98,9 @@ export default function AudioMode({ onOpenSettings }: { onOpenSettings?: () => v
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-black/5 bg-surface px-6 py-2 text-xs">
-        {phase === 'working' && <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />}
-        <span className={phase === 'error' ? 'text-red-600' : 'text-subtle'}>
+      <div className="flex items-center gap-2 bg-canvas px-6 py-2 text-xs">
+        {phase === 'working' && <span className="h-2 w-2 animate-pulse rounded-full bg-accent-fill" />}
+        <span className={phase === 'error' ? 'text-danger' : 'text-subtle'}>
           {phase === 'error' ? `出错:${error}` : phase === 'done' ? '✅ 分析完成' : status || '处理中…'}
         </span>
       </div>

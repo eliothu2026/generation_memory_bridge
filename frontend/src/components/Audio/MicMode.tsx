@@ -117,16 +117,16 @@ export default function MicMode({ onOpenSettings }: { onOpenSettings?: () => voi
   if (!snap) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
-        <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-black/10 bg-surface px-6 py-12 text-center">
+        <div className="flex w-full max-w-md flex-col items-center gap-3 rounded-card border-2 border-dashed border-ink/10 bg-elev px-6 py-12 text-center">
           <div className="text-4xl">🎤</div>
           <div className="text-sm font-medium text-ink">实时麦克风 · 边听边理解</div>
           <div className="text-xs leading-relaxed text-subtle">
             对着麦克风讲述,浏览器每 ~4 秒把一段音频送去转写 → 背压合并 → 真实分析。
             <br />
-            需后端已启动、配 DEEPSEEK_API_KEY、装 <code className="rounded bg-slate-100 px-1">[asr]</code>,并允许麦克风权限。
+            需后端已启动、配 DEEPSEEK_API_KEY、装 <code className="rounded bg-ink/5 px-1">[asr]</code>,并允许麦克风权限。
           </div>
-          {error && <div className="text-xs text-red-600">{error}</div>}
-          <button onClick={start} className="mt-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white">
+          {error && <div className="text-xs text-danger">{error}</div>}
+          <button onClick={start} className="mt-2 rounded-full bg-accent-fill px-4 py-2 text-sm font-medium text-on-accent">
             开始聆听
           </button>
           {onOpenSettings && (
@@ -141,16 +141,16 @@ export default function MicMode({ onOpenSettings }: { onOpenSettings?: () => voi
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-black/5 bg-surface px-6 py-2 text-xs">
-        {phase === 'recording' && <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />}
-        <span className={error ? 'text-red-600' : 'text-subtle'}>{error ? `出错:${error}` : status}</span>
+      <div className="flex items-center gap-2 bg-canvas px-6 py-2 text-xs">
+        {phase === 'recording' && <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />}
+        <span className={error ? 'text-danger' : 'text-subtle'}>{error ? `出错:${error}` : status}</span>
         <div className="ml-auto">
           {phase === 'recording' ? (
-            <button onClick={stop} className="rounded-full bg-red-500 px-3 py-1 text-xs font-medium text-white">
+            <button onClick={stop} className="rounded-full bg-danger px-3 py-1 text-xs font-medium text-on-accent">
               ■ 停止聆听
             </button>
           ) : (
-            <button onClick={start} className="rounded-full bg-accent px-3 py-1 text-xs font-medium text-white">
+            <button onClick={start} className="rounded-full bg-accent-fill px-3 py-1 text-xs font-medium text-on-accent">
               重新开始
             </button>
           )}

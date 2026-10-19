@@ -3,6 +3,7 @@ import type { Mode, SessionSnapshot } from '../../api/provider'
 import Composer from './Composer'
 import ElderBubble from './ElderBubble'
 import GrandchildBubble from './GrandchildBubble'
+import ThinkingBubble from './ThinkingBubble'
 
 interface Props {
   snap: SessionSnapshot
@@ -53,9 +54,9 @@ export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubm
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col bg-surface">
-      <div className="flex-1 overflow-y-auto px-4 py-6 md:px-10">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+    <div className="flex min-w-0 flex-1 flex-col bg-canvas">
+      <div className="flex-1 overflow-y-auto px-6 py-4 lg:px-2">
+        <div className="mx-auto flex max-w-[720px] flex-col gap-6">
           {snap.messages.length === 0 && (
             <div className="mt-24 text-center text-subtle">
               <div className="text-5xl">🌳</div>
@@ -87,12 +88,7 @@ export default function ChatArea({ snap, elderName, mode, onNext, onSend, onSubm
             ),
           )}
 
-          {busy && backend && (
-            <div className="flex animate-fade-in items-center gap-2 text-sm text-subtle">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-              AI 正在分析这段口述…(真实模型,约 1–2 分钟)
-            </div>
-          )}
+          {busy && backend && <ThinkingBubble hint="真实模型分析,约 1–2 分钟" />}
 
           <div ref={bottomRef} />
         </div>

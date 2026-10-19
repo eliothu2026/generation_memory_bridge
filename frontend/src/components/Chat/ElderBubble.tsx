@@ -23,7 +23,7 @@ export default function ElderBubble({
   return (
     <div className="flex animate-fade-in-up gap-3">
       <div
-        className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-amber-100 text-lg"
+        className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-ink/5 text-lg"
         title={elderName}
       >
         👵
@@ -33,14 +33,14 @@ export default function ElderBubble({
           {elderName}
           {coalescedFrom != null && coalescedFrom > 0 && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-subtle"
+              className="inline-flex items-center gap-0.5 rounded-full bg-ink/5 px-1.5 py-0.5 text-[10px] text-subtle"
               title="该段由多个 ASR 片段经背压合并队列合并而来"
             >
               <Mic size={10} /> 合并自 {coalescedFrom} 段
             </span>
           )}
         </div>
-        <div className="inline-block max-w-full rounded-2xl rounded-tl-md bg-[#f1f3f4] px-4 py-3 text-[15px] leading-relaxed text-ink">
+        <div className="inline-block max-w-full rounded-bubble rounded-tl-[5px] bg-elder px-4 py-3 text-[15px] leading-relaxed text-ink shadow-soft">
           {text}
         </div>
 

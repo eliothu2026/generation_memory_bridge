@@ -9,16 +9,16 @@ interface Props {
 export default function FollowUpChips({ items, onPick }: Props) {
   return (
     <div className="mt-2.5 animate-fade-in">
-      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-amber-700">
+      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-subtle">
         <Lightbulb size={13} /> 你可以这样接
-        <span className="text-[10px] font-normal text-subtle">· 点击填入输入框</span>
+        <span className="text-[10px] font-normal text-faint">· 点击填入输入框</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {items.map((q, i) => (
           <button
             key={i}
             onClick={() => onPick(q)}
-            className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-left text-[13px] text-amber-900 transition hover:border-amber-300 hover:bg-amber-100"
+            className="rounded-full bg-ink/5 px-3 py-1.5 text-left text-[13px] text-subtle transition hover:bg-accent/10 hover:text-accent"
           >
             {q}
           </button>

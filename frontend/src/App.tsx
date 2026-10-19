@@ -51,7 +51,7 @@ export default function App() {
   const subtitle = activeId ? '实时(后端)· 真实分析' : '离线演示 · 免 key'
 
   return (
-    <div className="flex h-full w-full overflow-hidden font-sans text-ink">
+    <div className="relative flex h-full w-full overflow-hidden bg-canvas font-sans text-ink">
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed((v) => !v)}
@@ -63,7 +63,15 @@ export default function App() {
         onNewSession={newSession}
         onDeleteSession={removeSession}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* 对话区为底:左右留白给悬浮卡片让位(对齐 demo 的 --pad-left / --pad-right) */}
+      <div
+        className={
+          'flex min-w-0 flex-1 flex-col transition-[padding] duration-300 ease-out ' +
+          (sidebarCollapsed ? 'lg:pl-[104px]' : 'lg:pl-[336px]') +
+          ' ' +
+          (timelineCollapsed ? 'lg:pr-[104px]' : 'lg:pr-[392px]')
+        }
+      >
         <TopBar title={title} subtitle={subtitle} onOpenSettings={() => setSettingsOpen(true)} />
         {activeId ? (
           <LiveSessionView

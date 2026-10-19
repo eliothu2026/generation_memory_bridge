@@ -29,7 +29,7 @@ export default function TimelinePanel({
     return (
       <button
         onClick={onToggle}
-        className="flex w-12 flex-none flex-col items-center gap-3 border-l border-black/5 bg-surface py-4 text-subtle transition hover:bg-slate-50"
+        className="flex w-12 flex-none flex-col items-center gap-3 bg-card py-4 text-subtle transition hover:bg-ink/5 lg:absolute lg:right-[18px] lg:top-[18px] lg:z-20 lg:h-auto lg:rounded-panel lg:shadow-float"
         title="展开时间线"
       >
         <ChevronLeft size={18} />
@@ -42,18 +42,18 @@ export default function TimelinePanel({
   const events = [...timeline.events].sort((a, b) => a.order - b.order)
 
   return (
-    <aside className="flex w-80 flex-none flex-col border-l border-black/5 bg-surface lg:w-96">
+    <aside className="flex w-80 flex-none flex-col bg-card lg:absolute lg:bottom-[18px] lg:right-[18px] lg:top-[18px] lg:z-20 lg:w-[344px] lg:overflow-hidden lg:rounded-panel lg:shadow-float">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Clock size={16} className="text-accent" /> 时间线 · 逻辑梳理
         </div>
-        <button onClick={onToggle} className="rounded-full p-1 text-subtle hover:bg-slate-100" title="收起">
+        <button onClick={onToggle} className="rounded-full p-1 text-subtle hover:bg-ink/5" title="收起">
           <ChevronRight size={18} />
         </button>
       </div>
 
       {eraEstimate && (
-        <div className="mx-4 mb-2 flex items-start gap-1.5 rounded-lg bg-accent/5 px-3 py-2 text-xs text-accent">
+        <div className="mx-4 mb-2 flex items-start gap-1.5 rounded-[10px] bg-accent/10 px-3 py-2 text-xs text-accent">
           <Sparkles size={13} className="mt-0.5 flex-none" />
           <span>
             <span className="font-medium">AI 推测年代:</span>
@@ -67,7 +67,7 @@ export default function TimelinePanel({
           已听 {segmentsPlayed}/{totalSegments} 段
         </span>
         {timeline.last_update_mode && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5">
+          <span className="rounded-full bg-ink/5 px-2 py-0.5">
             {MODE_LABEL[timeline.last_update_mode] ?? timeline.last_update_mode}
           </span>
         )}
@@ -89,13 +89,14 @@ export default function TimelinePanel({
         )}
 
         {timeline.open_threads.length > 0 && (
-          <div className="mt-4 border-t border-black/5 pt-3">
+          <div className="mt-4 border-t border-line pt-3">
             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-subtle">
               <HelpCircle size={13} /> 待澄清线索
             </div>
             <ul className="flex flex-col gap-1.5 pb-6">
               {timeline.open_threads.map((t, i) => (
-                <li key={i} className="rounded-lg bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+                <li key={i} className="rounded-[10px] bg-ink/5 px-3 py-2 pl-6 text-xs leading-relaxed text-ink/85">
+                  <span className="mr-1 font-bold text-accent">?</span>
                   {t}
                 </li>
               ))}

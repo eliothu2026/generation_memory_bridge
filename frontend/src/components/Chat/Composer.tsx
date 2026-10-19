@@ -35,17 +35,17 @@ export default function Composer({
     'rounded-full px-2.5 py-0.5 transition ' +
     (active
       ? tone === 'amber'
-        ? 'bg-amber-100 text-amber-900'
-        : 'bg-blue-100 text-blue-900'
+        ? 'bg-accent/15 text-accent'
+        : 'bg-ink/10 text-ink'
       : 'text-subtle hover:text-ink')
 
   return (
-    <div className="border-t border-black/5 bg-surface px-4 py-3 md:px-10">
-      <div className="mx-auto max-w-3xl">
+    <div className="bg-canvas px-6 pb-5 pt-2">
+      <div className="mx-auto max-w-[720px]">
         {backend && (
           <div className="mb-2 flex items-center gap-1.5 text-xs">
             <span className="text-subtle">以谁的身份说:</span>
-            <div className="flex items-center rounded-full border border-black/10 bg-white p-0.5 font-medium">
+            <div className="flex items-center rounded-full border border-ink/10 bg-elev p-0.5 font-medium">
               <button onClick={() => onSpeakerChange('elder')} className={chip(speaker === 'elder', 'amber')}>
                 👵 老人
               </button>
@@ -58,7 +58,7 @@ export default function Composer({
         )}
 
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 shadow-soft focus-within:border-accent/40">
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-ink/10 bg-elev px-4 py-2 shadow-soft focus-within:border-accent/40">
             <input
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -75,7 +75,7 @@ export default function Composer({
             <button
               onClick={onSend}
               disabled={!value.trim() || busy}
-              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-accent transition enabled:hover:bg-accent/10 disabled:text-slate-300"
+              className="flex h-8 w-8 flex-none items-center justify-center rounded-full text-accent transition enabled:hover:bg-accent/10 disabled:text-faint"
               title="发送"
             >
               {busy ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
@@ -86,7 +86,7 @@ export default function Composer({
             <button
               onClick={onNext}
               disabled={!canAdvance || busy}
-              className="flex flex-none items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              className="flex flex-none items-center gap-1.5 rounded-full bg-accent-fill px-4 py-2.5 text-sm font-medium text-on-accent shadow-soft transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:bg-ink/10 disabled:text-faint"
             >
               {canAdvance ? (
                 <>
