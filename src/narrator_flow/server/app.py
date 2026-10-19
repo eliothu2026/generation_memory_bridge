@@ -39,12 +39,46 @@ load_dotenv(REPO_ROOT / ".env")  # 读取项目根 .env(DEEPSEEK_API_KEY 等)
 DEFAULT_BASE_URL = "https://api.deepseek.com"
 DEFAULT_TITLE = "新对话"
 ELDER_NAME = "长辈"
+# ASR 两档:本地 faster-whisper(离线免费) 或 云端 OpenAI 兼容转写接口(StepFun / OpenAI …)。
+# 全部只写进进程内存(ASR_*),不落盘。
+ASR_LOCAL = "local"
+ASR_CLOUD = "cloud"
+DEFAULT_ASR_MODEL = "small"  # 本地:tiny/base/small/medium/large-v3
+DEFAULT_CLOUD_MODEL = "stepaudio-3-asr-max"
+DEFAULT_CLOUD_BASE_URL = "https://api.stepfun.com/v1"
 SERVER_OUTPUT = Path(os.environ.get("NARRATOR_SERVER_OUTPUT", "output_server"))
 WEB_STORE = WebSessionStore(SERVER_OUTPUT / "web_sessions.db")
 
 
 def _has_key() -> bool:
     return bool(os.environ.get("DEEPSEEK_API_KEY"))
+
+
+def _asr_provider() -> str:
+    p = (os.environ.get("ASR_PROVIDER") or ASR_LOCAL).strip().lower()
+    return ASR_CLOUD if p == ASR_CLOUD else ASR_LOCAL
+
+
+def _asr_model() -> str:
+    m = (os.environ.get("ASR_MODEL") or "").strip()
+    if m:
+        return m
+    return DEFAULT_CLOUD_MODEL if _asr_provider() == ASR_CLOUD else DEFAULT_ASR_MODEL
+
+
+def _asr_base_url() -> str:
+    return (os.environ.get("ASR_BASE_URL") or DEFAULT_CLOUD_BASE_URL).strip()
+
+
+def _asr_has_key() -> bool:
+    return bool((os.environ.get("ASR_API_KEY") or "").strip())
+
+
+def _asr_available() -> bool:
+    """faster-whisper 属可选依赖;未安装时前端给出安装提示,而不是等转写才报错。"""
+    import importlib.util
+
+    return importlib.util.find_spec("faster_whisper") is not None
 
 
 def _timeline(state: NarratorFlowState) -> dict:
@@ -93,6 +127,23 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 class ConfigReq(BaseModel):
     api_key: Optional[str] = None
     base_url: Optional[str] = None
+    # ASR:provider = local | cloud;cloud 用 base_url/api_key/model
+    asr_provider: Optional[str] = None
+    asr_model: Optional[str] = None
+    asr_base_url: Optional[str] = None
+    asr_api_key: Optional[str] = None
+
+
+def _config_payload() -> dict:
+    return {
+        "configured": _has_key(),
+        "base_url": os.environ.get("DEEPSEEK_BASE_URL", DEFAULT_BASE_URL),
+        "asr_provider": _asr_provider(),
+        "asr_model": _asr_model(),
+        "asr_base_url": _asr_base_url(),
+        "asr_has_key": _asr_has_key(),
+        "asr_available": _asr_available(),
+    }
 
 
 @app.get("/api/health")
@@ -102,12 +153,12 @@ def health() -> dict:
 
 @app.get("/api/config")
 def get_config() -> dict:
-    return {"configured": _has_key(), "base_url": os.environ.get("DEEPSEEK_BASE_URL", DEFAULT_BASE_URL)}
+    return _config_payload()
 
 
 @app.post("/api/config")
 def set_config(req: ConfigReq) -> dict:
-    """从前端热配置 key/base_url —— 写进运行进程环境变量(仅内存、不落盘,绝不回传明文)。"""
+    """从前端热配置 LLM 与 ASR —— 写进运行进程环境变量(仅内存、不落盘,绝不回传明文)。"""
     if req.api_key is not None:
         key = req.api_key.strip()
         if key:
@@ -116,7 +167,31 @@ def set_config(req: ConfigReq) -> dict:
             os.environ.pop("DEEPSEEK_API_KEY", None)
     if req.base_url is not None and req.base_url.strip():
         os.environ["DEEPSEEK_BASE_URL"] = req.base_url.strip()
-    return {"configured": _has_key(), "base_url": os.environ.get("DEEPSEEK_BASE_URL", DEFAULT_BASE_URL)}
+
+    if req.asr_provider is not None:
+        p = req.asr_provider.strip().lower()
+        if p in (ASR_LOCAL, ASR_CLOUD):
+            os.environ["ASR_PROVIDER"] = p
+    if req.asr_model is not None:
+        model = req.asr_model.strip()
+        if model:
+            os.environ["ASR_MODEL"] = model
+        else:
+            os.environ.pop("ASR_MODEL", None)  # 清空 => 回到该 provider 的默认模型
+    if req.asr_base_url is not None:
+        burl = req.asr_base_url.strip()
+        if burl:
+            os.environ["ASR_BASE_URL"] = burl
+        else:
+            os.environ.pop("ASR_BASE_URL", None)
+    if req.asr_api_key is not None:
+        k = req.asr_api_key.strip()
+        if k:
+            os.environ["ASR_API_KEY"] = k
+        else:
+            os.environ.pop("ASR_API_KEY", None)  # 显式传空 = 清除
+
+    return _config_payload()
 
 
 # ---------------------------------------------------------------- 会话 CRUD
@@ -227,12 +302,29 @@ async def ws_session(websocket: WebSocket, sid: str) -> None:
                 if not _has_key():
                     await send({"type": "error", "message": "请先配置 API Key(右上角 ⚙️)才能分析"})
                     continue
-                from narrator_flow.streaming_app.asr import transcribe_segments  # 惰性
-                seg_path = SERVER_OUTPUT / f"{sid}-{next_id()}.webm"
+                from narrator_flow.streaming_app.asr_cloud import sniff_ext_bytes, transcribe_cloud  # 惰性
+
+                if _asr_provider() == ASR_CLOUD and not _asr_has_key():
+                    await send({"type": "error", "message": "请先在右上角 ⚙️ 配置云端 ASR 的 API Key"})
+                    continue
+                # 按文件头决定扩展名:前端已把麦克风录音转成 16k WAV,上传文件则可能是 mp3/m4a/ogg
+                ext = sniff_ext_bytes(blob) or ".wav"
+                seg_path = SERVER_OUTPUT / f"{sid}-{next_id()}{ext}"
                 await asyncio.to_thread(seg_path.write_bytes, blob)
                 try:
-                    texts = await asyncio.to_thread(transcribe_segments, str(seg_path))
-                except Exception as e:  # noqa: BLE001 — 缺 [asr]/解码失败,回传但不断流
+                    if _asr_provider() == ASR_CLOUD:
+                        texts = await asyncio.to_thread(
+                            transcribe_cloud,
+                            str(seg_path),
+                            _asr_model(),
+                            _asr_base_url(),
+                            os.environ.get("ASR_API_KEY", ""),
+                        )
+                    else:
+                        from narrator_flow.streaming_app.asr import transcribe_segments
+
+                        texts = await asyncio.to_thread(transcribe_segments, str(seg_path), _asr_model())
+                except Exception as e:  # noqa: BLE001 — 缺 [asr]/云端报错/解码失败,回传但不断流
                     await send({"type": "error", "message": str(e)})
                     continue
                 for t in texts:
